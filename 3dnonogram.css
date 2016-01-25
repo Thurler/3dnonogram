@@ -1,0 +1,12 @@
+body {
+  margin:0;
+  overflow: hidden;
+  background-color: #232226;
+}
+
+canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+

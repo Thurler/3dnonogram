@@ -1,0 +1,15 @@
+<html>
+	<body>
+		<link rel="stylesheet" type="text/css" href="cubes.css">
+		<title> 3D Nonogram </title>
+	</body>
+	
+	<body>
+	
+	<script src="threejs/three.min.js"></script>
+    <script src="threejs/TrackballControls.js"></script>
+	
+	<script src="3dnonogram.js"></script>
+	
+	</body>
+</html>
