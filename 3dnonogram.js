@@ -1,18 +1,20 @@
 //Code for assignment 2 of Computer Graphics class
 
-//----- Global Variables and Functions
+//----- Global Variables
 var scene, camera, renderer; //Three.js variables
 var width, height, aspect; //Window variables
 
 var selected = -1; //Stores which cube is currently selected
 
-var objects = [] //Stores instances of all cube objects in scene
+var cube_objects = [] //Stores instances of all cube objects in scene
 var cubes = []; //Stores cubes in scene
 var planes_x = []; //Stores planes in x axis
 var planes_y = []; //Stores planes in y axis
 var planes_z = []; //Stores planes in z axis
 var mousepos = new THREE.Vector2(); //Stores mouse position in normalized coords
 var raycaster = new THREE.Raycaster();
+
+//----- Global Functions
 
 function createCube(x, y, z){
 	//Creates a cube centered at [x,y,z]
@@ -21,11 +23,13 @@ function createCube(x, y, z){
 	var line_material = new THREE.LineBasicMaterial({color: 0x7c7c7c});
 
 	var object = new Cube();
-	
+
+	//Actual cube object
 	var cube = new THREE.Mesh(cube_geometry, cube_material);
 	cube.position.set(x,y,z);
 	cubes.push(cube);
 	
+	//Cube wireframe
 	var wireframe = new THREE.BoxHelper(cube);
 	wireframe.material.color.set("black");
 	
@@ -35,16 +39,21 @@ function createCube(x, y, z){
 	
 	//Store cube in memory
 	object.init(cube,[x,y,z],wireframe);
-	objects.push(object)
+	cube_objects.push(object)
 }
 
 function centralizeGrid(dim){
+	//This function is called whenever we need to center the cubes on screen so that
+	//the grid's center matches the coordinate system's center.
+
+	//The function accepts as argument an array containing how many cubes are
+	//present in each coordinate axis
 	offset = [];
 	for (i=0; i<dim.length; i++){
-		if (dim[i]%2) offset.push(parseInt(dim[i]/2));
-		else offset.push(parseInt(dim[i]/2) + 0.5);
+		if (dim[i]%2) offset.push(-parseInt(dim[i]/2));
+		else offset.push(-parseInt(dim[i]/2) - 0.5);
 	}
-	for (i=0; i<objects.length; i++) objects[i].moveCube(offset);
+	for (i=0; i<cube_objects.length; i++) cube_objects[i].moveCube(offset);
 }
 
 //----- Main class that stores cube information
@@ -56,7 +65,7 @@ function Cube(){
 }
 
 Cube.prototype.init = function(cube, center, wireframe){
-	//Receives a cube mesh, a 3-coordinate vector and an array of line meshes
+	//Receives a cube mesh, a 3-coordinate vector and a boxhelper mesh
 	this.cube = cube;
 	this.center = center;
 	this.wireframe = wireframe;
@@ -64,7 +73,7 @@ Cube.prototype.init = function(cube, center, wireframe){
 
 Cube.prototype.deleteCube = function(){
 	//Remove cube from data structures
-	objects.splice(selected, 1);
+	cube_objects.splice(selected, 1);
 	cubes.splice(selected, 1);
 	
 	//Remove cube and lines from scene
@@ -75,15 +84,14 @@ Cube.prototype.deleteCube = function(){
 	selected = -1;
 }
 
-Cube.prototype.moveCube = function(point){
-	console.log(this.cube.position.x);
-	this.cube.translateX(-point[0]);
-	this.wireframe.translateX(-point[0]);
-	this.cube.translateY(-point[1]);
-	this.wireframe.translateY(-point[1]);
-	this.cube.translateZ(-point[2]);
-	this.wireframe.translateZ(-point[2]);
-	console.log(this.cube.position.x);
+Cube.prototype.moveCube = function(offset){
+	//Translates cube by adding the offset to the current position
+	this.cube.translateX(offset[0]);
+	this.wireframe.translateX(offset[0]);
+	this.cube.translateY(offset[1]);
+	this.wireframe.translateY(offset[1]);
+	this.cube.translateZ(offset[2]);
+	this.wireframe.translateZ(offset[2]);
 }
 
 //----- Main function calls
@@ -135,15 +143,16 @@ function init(){
     window.addEventListener('keydown', onKeyPress, false);
 	
 	//Draw 3x3x3 grid and centralize
-	for (i=0; i<3; i++){
-		for (j=0; j<3; j++){
-			for (k=0; k<3; k++){
-				createCube(i,j,k);
+	for (i=0; i<7; i++){
+		for (j=0; j<7; j++){
+			for (k=0; k<7; k++){
+				if (i || j || k) createCube(i,j,k);
+				else createCube(i+0.0001, j+0.0001, k+0.0001);
+				//Offset for BoxHelper overlapping issue
 			}
 		}
 	}
-	cubes[0].material.color.setHex(0xFF0000);
-	centralizeGrid([3,3,3]);
+	centralizeGrid([7,7,7]);
 }
 
 function animate() {
@@ -172,18 +181,12 @@ function onWindowResize() {
 function onMouseMove(event) {
 	//Stores mouse position in each cycle and checks for intersections
 	//If intersects an object, change color to darker blue
+
+	event.preventDefault();
+
 	mousepos.x = (event.clientX / width) * 2 - 1;
 	mousepos.y = - (event.clientY / height) * 2 + 1;
 	raycaster.setFromCamera(mousepos, camera);
-	
-	if(translating){
-		//Update object coordinates based on plane and ray casting
-		var intersects = raycaster.intersectObject(plane);
-		if (intersects.length > 0){
-			objects[selected].moveCube(intersects[0].point);
-		}
-		return;
-	}
 	
 	//Highlight nearest cube of ray casting
 	var intersections = raycaster.intersectObjects(cubes);
@@ -199,7 +202,6 @@ function onMouseMove(event) {
 
 function onMouseDown(event) {
 	//Checks if left click was on top of an existing cube - select it if so
-	//Creates a new cube on right click - if intersects with a cube, put in front
 	
 	event.preventDefault();
 	raycaster.setFromCamera(mousepos, camera);
@@ -210,7 +212,7 @@ function onMouseDown(event) {
 			if (intersections.length > 0){
 				//Store intersected cube
 				var tmp = intersections[0].object;
-				//Check which cub was intersected among all in the array
+				//Check which cube was intersected among all in the array
 				for (i = 0; i < cubes.length; i++){
 					if (cubes[i] === tmp){
 						//Unselect it if it was previously selected
@@ -222,10 +224,6 @@ function onMouseDown(event) {
 						//Unselect previous selection
 						if (selected+1) cubes[selected].material.color.setHex(0x9ADBF3);
 						selected = i;
-						//Enable translation, disable camera controls
-						translating = true;
-						controls.enabled = false;
-						plane.lookAt(camera.position); //Set plane to camera position
 					}
 				}
 			}
@@ -233,39 +231,18 @@ function onMouseDown(event) {
 			break;
 
 		case 2: //right click
-			//We will always insert a new cube in the plane z=0, so we find the
-			//world coordinates for the mouse click on that plane
 			
-			var vector = new THREE.Vector3();
-			vector.set(mousepos.x, mousepos.y, 1);
-			vector.unproject(camera);
-			
-			var dir = vector.sub(camera.position).normalize();
-			var distance = -camera.position.z / dir.z;
-			
-			var pos = camera.position.clone().add(dir.multiplyScalar(distance));
-			
-			createCube(pos.x,pos.y,pos.z);
-			
-			break;
 	}
 }
 
 function onMouseUp(event){
-	//Stops translation and enables camera controls
-	translating = false; //No longer translating
-	controls.enabled = true;
-	plane.position.copy(cubes[selected].position);
+	//Mouse up event
+
+	event.preventDefault();
 }
 
 function onKeyPress(event){
-	//Handles keydown events for deleting the selected cube
-	//Does so if pressed DEL or BACKSPACE
-	
-	if (!(selected+1)) return; //If nothing selected (selected is -1) do nothing
+	//Key press event
 
-	if (event.which === 46 || event.which === 8){
-		//Delete selected cube
-		objects[selected].deleteCube();
-	}
+	event.preventDefault();
 }
