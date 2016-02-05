@@ -6,7 +6,10 @@
 var scene, camera, renderer; //Three.js variables
 var width, height, aspect; //Window variables
 
-var selected = -1;
+var mouse; //Stores whether mouse is pressed
+var pressCoord = new THREE.Vector3(); //Stores clicked cube's coordinate
+var pressAxis = ""; //Stores multiple cube operations' axis
+var lastPress = null; //Stores last cube that was clicked on
 
 var cube_objects = [] //Stores instances of all cube objects in scene
 var cubes = []; //Stores cubes in scene
@@ -67,19 +70,95 @@ function centralizeGrid(dim){
     for (i=0; i<cube_objects.length; i++) cube_objects[i].moveCube(offset);
 }
 
+function destroy(obj,cube){
+    if(!obj.marked){
+        obj.deleteCube();
+        delete cubeDictionary[cube.id];
+    }
+}
+
+function mark(obj, cube){
+    obj.marked = !(obj.marked);
+    if (obj.marked) cube.material.color.setHex(0xF28B1E);
+    else cube.material.color.setHex(0x9ADBF3);
+}
+
+function mousePress(){
+    //This function deleted and marks other cubes depending on the cube that was
+    //originally pressed, as long as the mouse button is held down
+    if (mouse){
+        raycaster.setFromCamera(mousepos, camera);
+        var intersections = raycaster.intersectObjects(cubes);
+        if (intersections.length > 0){
+            var cube = intersections[0].object;
+            var obj = cubeDictionary[cube.id];
+			//if (lastPress === null) return; //Mousedown not done
+            if (obj === lastPress) return; //Hovering over same cube
+            else lastPress = obj;
+            if (pressAxis === ""){
+                if (obj.coord.x === pressCoord.x && obj.coord.y === pressCoord.y){
+                    pressAxis = "z";
+                }
+                else if (obj.coord.x === pressCoord.x && obj.coord.z === pressCoord.z){
+                    pressAxis = "y";
+                }
+                else if (obj.coord.z === pressCoord.z && obj.coord.y === pressCoord.y){
+                    pressAxis = "x";
+                }
+                else return;
+                if (selectedMode == "breaking"){
+                    destroy(obj,cube);
+                }
+                else if (selectedMode == "marking"){
+                    mark(obj,cube);
+                }
+            }
+            else{
+                if (pressAxis === "x" && obj.coord.z === pressCoord.z && obj.coord.y === pressCoord.y){
+                    if (selectedMode == "breaking"){
+                        destroy(obj,cube);
+                    }
+                    else if (selectedMode == "marking"){
+                        mark(obj,cube);
+                    }
+                }
+                if (pressAxis === "y" && obj.coord.z === pressCoord.z && obj.coord.x === pressCoord.x){
+                    if (selectedMode == "breaking"){
+                        destroy(obj,cube);
+                    }
+                    else if (selectedMode == "marking"){
+                        mark(obj,cube);
+                    }
+                }
+                if (pressAxis === "z" && obj.coord.x === pressCoord.x && obj.coord.y === pressCoord.y){
+                    if (selectedMode == "breaking"){
+                        destroy(obj,cube);
+                    }
+                    else if (selectedMode == "marking"){
+                        mark(obj,cube);
+                    }
+                }
+            }
+        }
+    }
+}
+
 //----- Main class that stores cube information
 
 function Cube(){
     this.cube = null; //Stores cube mesh
-    this.center = null; //Stores cube center
+    this.coord = new THREE.Vector3(); //Stores cube center
     this.wireframe_cube = null; //Stores wireframe cube mesh
     this.wireframe = null; //Stores cube wireframe
+    this.marked = false; //Stores whether cube is marked or not
 }
 
 Cube.prototype.init = function(cube, center, wfcube, wireframe){
     //Receives a cube mesh, a 3-coordinate vector, an intermediate cube mesh for the boxhelper and a boxhelper mesh
     this.cube = cube;
-    this.center = center;
+    this.coord.x = center[0];
+    this.coord.y = center[1];
+    this.coord.z = center[2];
     this.wireframe_cube = wfcube;
     this.wireframe = wireframe;
 }
@@ -170,11 +249,12 @@ function init(){
 function animate() {
     requestAnimationFrame(animate);
     render();
+    mousePress();
 }
 
 function render() {
-    controls.update()
-    renderer.render(scene, camera)
+    controls.update();
+    renderer.render(scene, camera);
 }
 
 //----- Event listeners
@@ -202,13 +282,15 @@ function onMouseMove(event) {
     
     //Highlight nearest cube of ray casting
     var intersections = raycaster.intersectObjects(cubes);
-    for (i = 0; i < cubes.length; i++){
-        if (i === selected) continue;
+    for (i = 0; i < cube_objects.length; i++){
+        if (cube_objects[i].marked) continue;
         cubes[i].material.color.setHex(0x9ADBF3);
     }
     if (intersections.length > 0){
         //Only the first intersection matters
-        intersections[0].object.material.color.setHex(0x779EAC);
+        if (!cubeDictionary[intersections[0].object.id].marked){
+            intersections[0].object.material.color.setHex(0x779EAC);
+        }
     }
 }
 
@@ -216,7 +298,7 @@ function onMouseDown(event) {
     //Changes cube properties depending on current select mode. Clicks that don't intersect cubes do nothing.
     
     event.preventDefault();
-    
+    mouse = true;
     raycaster.setFromCamera(mousepos, camera);
     var intersections = raycaster.intersectObjects(cubes);
     
@@ -226,10 +308,16 @@ function onMouseDown(event) {
                 //Store intersected cube
                 var cube = intersections[0].object;
                 var obj = cubeDictionary[cube.id];
+                pressCoord.x = obj.coord.x;
+                pressCoord.y = obj.coord.y;
+                pressCoord.z = obj.coord.z;
                 if (selectedMode == "breaking"){
-                    obj.deleteCube();
-                    delete cubeDictionary[cube.id];
+                    destroy(obj,cube);
                 }
+                else if (selectedMode == "marking"){
+                    mark(obj,cube);
+                }
+				var lastPress = obj;
             }
             break;
 
@@ -241,6 +329,11 @@ function onMouseUp(event){
     //Mouse up event
 
     event.preventDefault();
+    mouse = false;
+    pressAxis = "";
+    pressCoord.x = -1;
+    pressCoord.y = -1;
+    pressCoord.z = -1;
 }
 
 function onKeyDown(event){
