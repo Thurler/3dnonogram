@@ -71,76 +71,18 @@ function centralizeGrid(dim){
 }
 
 function destroy(obj,cube){
+	//This function destroys a cube and the object associated with it
     if(!obj.marked){
+		delete cubeDictionary[cube.id];
         obj.deleteCube();
-        delete cubeDictionary[cube.id];
     }
 }
 
 function mark(obj, cube){
+	//This function [un]marks a cube, depending on its current state
     obj.marked = !(obj.marked);
     if (obj.marked) cube.material.color.setHex(0xF28B1E);
     else cube.material.color.setHex(0x9ADBF3);
-}
-
-function mousePress(){
-    //This function deleted and marks other cubes depending on the cube that was
-    //originally pressed, as long as the mouse button is held down
-    if (mouse){
-        raycaster.setFromCamera(mousepos, camera);
-        var intersections = raycaster.intersectObjects(cubes);
-        if (intersections.length > 0){
-            var cube = intersections[0].object;
-            var obj = cubeDictionary[cube.id];
-			//if (lastPress === null) return; //Mousedown not done
-            if (obj === lastPress) return; //Hovering over same cube
-            else lastPress = obj;
-            if (pressAxis === ""){
-                if (obj.coord.x === pressCoord.x && obj.coord.y === pressCoord.y){
-                    pressAxis = "z";
-                }
-                else if (obj.coord.x === pressCoord.x && obj.coord.z === pressCoord.z){
-                    pressAxis = "y";
-                }
-                else if (obj.coord.z === pressCoord.z && obj.coord.y === pressCoord.y){
-                    pressAxis = "x";
-                }
-                else return;
-                if (selectedMode == "breaking"){
-                    destroy(obj,cube);
-                }
-                else if (selectedMode == "marking"){
-                    mark(obj,cube);
-                }
-            }
-            else{
-                if (pressAxis === "x" && obj.coord.z === pressCoord.z && obj.coord.y === pressCoord.y){
-                    if (selectedMode == "breaking"){
-                        destroy(obj,cube);
-                    }
-                    else if (selectedMode == "marking"){
-                        mark(obj,cube);
-                    }
-                }
-                if (pressAxis === "y" && obj.coord.z === pressCoord.z && obj.coord.x === pressCoord.x){
-                    if (selectedMode == "breaking"){
-                        destroy(obj,cube);
-                    }
-                    else if (selectedMode == "marking"){
-                        mark(obj,cube);
-                    }
-                }
-                if (pressAxis === "z" && obj.coord.x === pressCoord.x && obj.coord.y === pressCoord.y){
-                    if (selectedMode == "breaking"){
-                        destroy(obj,cube);
-                    }
-                    else if (selectedMode == "marking"){
-                        mark(obj,cube);
-                    }
-                }
-            }
-        }
-    }
 }
 
 //----- Main class that stores cube information
@@ -249,7 +191,6 @@ function init(){
 function animate() {
     requestAnimationFrame(animate);
     render();
-    mousePress();
 }
 
 function render() {
@@ -272,25 +213,86 @@ function onWindowResize() {
 
 function onMouseMove(event) {
     //Stores mouse position in each cycle and checks for intersections
-    //If intersects an object, change color to darker blue
+    //If intersects an object, change color to darker blue / orange
+	//In addition, handles mouse button hold event, which insclude deleting and
+	//marking multiple cubes
 
     event.preventDefault();
 
     mousepos.x = (event.clientX / width) * 2 - 1;
     mousepos.y = - (event.clientY / height) * 2 + 1;
     raycaster.setFromCamera(mousepos, camera);
+	var intersections = raycaster.intersectObjects(cubes);
+	
+    if (mouse){
+		//Handles mouse hold event - enters if mouse button is pressed
+        if (intersections.length > 0){
+            var cube = intersections[0].object;
+            var obj = cubeDictionary[cube.id];
+            if (obj === lastPress) return; //Mouse still over the same cube
+            else lastPress = obj;
+			//Multiple cube operations can only happen if cubes belong to the same
+			//line - if they share two coordinates
+            if (pressAxis === ""){
+				//At first, we can move in any axis from the starting cube
+                if (obj.coord.x === pressCoord.x && obj.coord.y === pressCoord.y){
+					//If X and Y coordinates match, we are iterating Z
+                    pressAxis = "z";
+                }
+                else if (obj.coord.x === pressCoord.x && obj.coord.z === pressCoord.z){
+					//If X and Z coordinates match, we are iterating Y
+                    pressAxis = "y";
+                }
+                else if (obj.coord.z === pressCoord.z && obj.coord.y === pressCoord.y){
+					//If Y and Z coordinates match, we are iterating X
+                    pressAxis = "x";
+                }
+                else return;
+				
+				//Either destroy or [un]mark the new cube
+                if (selectedMode == "breaking"){
+                    destroy(obj,cube);
+                }
+                else if (selectedMode == "marking"){
+                    mark(obj,cube);
+                }
+            }
+            else{
+				//After choosing an axis, we can only do things alongside it
+				var valid = false;
+				//Check if cube is alognside specified axis, set valid to true if so
+                if (pressAxis === "x" && obj.coord.z === pressCoord.z && obj.coord.y === pressCoord.y){
+                    valid = true;
+                }
+                else if (pressAxis === "y" && obj.coord.z === pressCoord.z && obj.coord.x === pressCoord.x){
+                    valid = true;
+                }
+                else if (pressAxis === "z" && obj.coord.x === pressCoord.x && obj.coord.y === pressCoord.y){
+                    valid = true;
+                }
+				
+				//Either destroy or [un]mark the new cube
+				if (valid && selectedMode == "breaking"){
+                    destroy(obj,cube);
+                }
+                else if (valid && selectedMode == "marking"){
+                    mark(obj,cube);
+                }
+            }
+        }
+    }
     
     //Highlight nearest cube of ray casting
-    var intersections = raycaster.intersectObjects(cubes);
     for (i = 0; i < cube_objects.length; i++){
-        if (cube_objects[i].marked) continue;
-        cubes[i].material.color.setHex(0x9ADBF3);
+        if (cube_objects[i].marked) cubes[i].material.color.setHex(0xF28B1E);
+        else cubes[i].material.color.setHex(0x9ADBF3);
     }
     if (intersections.length > 0){
         //Only the first intersection matters
-        if (!cubeDictionary[intersections[0].object.id].marked){
-            intersections[0].object.material.color.setHex(0x779EAC);
+        if (cubeDictionary[intersections[0].object.id].marked){
+            intersections[0].object.material.color.setHex(0xBA4900);
         }
+		else intersections[0].object.material.color.setHex(0x779EAC); 
     }
 }
 
@@ -308,6 +310,7 @@ function onMouseDown(event) {
                 //Store intersected cube
                 var cube = intersections[0].object;
                 var obj = cubeDictionary[cube.id];
+				lastPress = obj; //Stores object for multiple cubes operations
                 pressCoord.x = obj.coord.x;
                 pressCoord.y = obj.coord.y;
                 pressCoord.z = obj.coord.z;
@@ -317,7 +320,6 @@ function onMouseDown(event) {
                 else if (selectedMode == "marking"){
                     mark(obj,cube);
                 }
-				var lastPress = obj;
             }
             break;
 
