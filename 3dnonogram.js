@@ -10,8 +10,9 @@ var mouse; //Stores whether mouse is pressed
 var pressCoord = new THREE.Vector3(); //Stores clicked cube's coordinate
 var pressAxis = ""; //Stores multiple cube operations' axis
 var lastPress = null; //Stores last cube that was clicked on
+var marking = null; //Stores whether the first cube was marked or unmarked
 
-var cube_objects = [] //Stores instances of all cube objects in scene
+var cube_objects = []; //Stores instances of all cube objects in scene
 var cubes = []; //Stores cubes in scene
 var planes_x = []; //Stores planes in x axis
 var planes_y = []; //Stores planes in y axis
@@ -71,18 +72,27 @@ function centralizeGrid(dim){
 }
 
 function destroy(obj,cube){
-	//This function destroys a cube and the object associated with it
+    //This function destroys a cube and the object associated with it
     if(!obj.marked){
-		delete cubeDictionary[cube.id];
+        delete cubeDictionary[cube.id];
         obj.deleteCube();
     }
 }
 
 function mark(obj, cube){
-	//This function [un]marks a cube, depending on its current state
+    //This function [un]marks a cube, depending on its current state
     obj.marked = !(obj.marked);
     if (obj.marked) cube.material.color.setHex(0xF28B1E);
     else cube.material.color.setHex(0x9ADBF3);
+}
+
+function delMark(obj,cube){
+    //This function [un]markes a cube for deletion, depending on its current state
+    if(!obj.marked){
+        obj.delMarked = !(obj.delMarked);
+        if (obj.delMarked) cube.material.color.setHex(0x999999);
+        else cube.material.color.setHex(0x9ADBF3);
+    }
 }
 
 //----- Main class that stores cube information
@@ -93,6 +103,7 @@ function Cube(){
     this.wireframe_cube = null; //Stores wireframe cube mesh
     this.wireframe = null; //Stores cube wireframe
     this.marked = false; //Stores whether cube is marked or not
+    this.delMarked = false; //Stores whether cube is marked for deleting or not
 }
 
 Cube.prototype.init = function(cube, center, wfcube, wireframe){
@@ -159,6 +170,7 @@ function init(){
     controls.noPan = false;
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.2;
+    controls.keys = [70, 71, 72]; 
     
     //Create the translation plane wherever
     plane = new THREE.Mesh(
@@ -214,53 +226,53 @@ function onWindowResize() {
 function onMouseMove(event) {
     //Stores mouse position in each cycle and checks for intersections
     //If intersects an object, change color to darker blue / orange
-	//In addition, handles mouse button hold event, which insclude deleting and
-	//marking multiple cubes
+    //In addition, handles mouse button hold event, which insclude deleting and
+    //marking multiple cubes
 
     event.preventDefault();
 
     mousepos.x = (event.clientX / width) * 2 - 1;
     mousepos.y = - (event.clientY / height) * 2 + 1;
     raycaster.setFromCamera(mousepos, camera);
-	var intersections = raycaster.intersectObjects(cubes);
-	
+    var intersections = raycaster.intersectObjects(cubes);
+    
     if (mouse){
-		//Handles mouse hold event - enters if mouse button is pressed
+        //Handles mouse hold event - enters if mouse button is pressed
         if (intersections.length > 0){
             var cube = intersections[0].object;
             var obj = cubeDictionary[cube.id];
             if (obj === lastPress) return; //Mouse still over the same cube
             else lastPress = obj;
-			//Multiple cube operations can only happen if cubes belong to the same
-			//line - if they share two coordinates
+            //Multiple cube operations can only happen if cubes belong to the same
+            //line - if they share two coordinates
             if (pressAxis === ""){
-				//At first, we can move in any axis from the starting cube
+                //At first, we can move in any axis from the starting cube
                 if (obj.coord.x === pressCoord.x && obj.coord.y === pressCoord.y){
-					//If X and Y coordinates match, we are iterating Z
+                    //If X and Y coordinates match, we are iterating Z
                     pressAxis = "z";
                 }
                 else if (obj.coord.x === pressCoord.x && obj.coord.z === pressCoord.z){
-					//If X and Z coordinates match, we are iterating Y
+                    //If X and Z coordinates match, we are iterating Y
                     pressAxis = "y";
                 }
                 else if (obj.coord.z === pressCoord.z && obj.coord.y === pressCoord.y){
-					//If Y and Z coordinates match, we are iterating X
+                    //If Y and Z coordinates match, we are iterating X
                     pressAxis = "x";
                 }
                 else return;
-				
-				//Either destroy or [un]mark the new cube
-                if (selectedMode == "breaking"){
-                    destroy(obj,cube);
+                
+                //Mark cubes according to mode
+                if (selectedMode == "marking"){
+                    if (marking !== obj.marked) mark(obj,cube);
                 }
-                else if (selectedMode == "marking"){
-                    mark(obj,cube);
+                else if (selectedMode == "multibreak"){
+                    if (marking !== obj.delMarked) delMark(obj,cube);
                 }
             }
             else{
-				//After choosing an axis, we can only do things alongside it
-				var valid = false;
-				//Check if cube is alognside specified axis, set valid to true if so
+                //After choosing an axis, we can only do things alongside it
+                var valid = false;
+                //Check if cube is alognside specified axis, set valid to true if so
                 if (pressAxis === "x" && obj.coord.z === pressCoord.z && obj.coord.y === pressCoord.y){
                     valid = true;
                 }
@@ -270,13 +282,13 @@ function onMouseMove(event) {
                 else if (pressAxis === "z" && obj.coord.x === pressCoord.x && obj.coord.y === pressCoord.y){
                     valid = true;
                 }
-				
-				//Either destroy or [un]mark the new cube
-				if (valid && selectedMode == "breaking"){
-                    destroy(obj,cube);
+                
+                //Mark cube according to mode
+                if (valid && selectedMode == "marking"){
+                    if (marking !== obj.marked) mark(obj,cube);
                 }
-                else if (valid && selectedMode == "marking"){
-                    mark(obj,cube);
+                else if (valid && selectedMode == "multibreak"){
+                    if (marking !== obj.delMarked) delMark(obj,cube);
                 }
             }
         }
@@ -285,6 +297,7 @@ function onMouseMove(event) {
     //Highlight nearest cube of ray casting
     for (i = 0; i < cube_objects.length; i++){
         if (cube_objects[i].marked) cubes[i].material.color.setHex(0xF28B1E);
+        else if (cube_objects[i].delMarked) cubes[i].material.color.setHex(0x999999);
         else cubes[i].material.color.setHex(0x9ADBF3);
     }
     if (intersections.length > 0){
@@ -292,7 +305,10 @@ function onMouseMove(event) {
         if (cubeDictionary[intersections[0].object.id].marked){
             intersections[0].object.material.color.setHex(0xBA4900);
         }
-		else intersections[0].object.material.color.setHex(0x779EAC); 
+        else if (cubeDictionary[intersections[0].object.id].delMarked){
+            intersections[0].object.material.color.setHex(0x666666);
+        }
+        else intersections[0].object.material.color.setHex(0x779EAC); 
     }
 }
 
@@ -310,7 +326,7 @@ function onMouseDown(event) {
                 //Store intersected cube
                 var cube = intersections[0].object;
                 var obj = cubeDictionary[cube.id];
-				lastPress = obj; //Stores object for multiple cubes operations
+                lastPress = obj; //Stores object for multiple cubes operations
                 pressCoord.x = obj.coord.x;
                 pressCoord.y = obj.coord.y;
                 pressCoord.z = obj.coord.z;
@@ -319,11 +335,16 @@ function onMouseDown(event) {
                 }
                 else if (selectedMode == "marking"){
                     mark(obj,cube);
+                    marking = obj.marked;
+                }
+                else if (selectedMode == "multibreak"){
+                    delMark(obj,cube);
+                    marking = obj.delMarked;
                 }
             }
             break;
 
-        case 2: //right click        
+        case 2: //right click
     }
 }
 
@@ -336,40 +357,79 @@ function onMouseUp(event){
     pressCoord.x = -1;
     pressCoord.y = -1;
     pressCoord.z = -1;
+    marking = null;
 }
 
 function onKeyDown(event){
     //Key down event
     //Pressing down W or up arrow enables break mode
     //Pressing down D or right arrow enables marking mode
-    //Pressing down A or left arrow enables creating mode    
+    //Pressing down A or left arrow enables creating mode  
+    //Pressing down S or down arrow enables multi break mode  
     
     event.preventDefault();
-    if(event.keyCode == 119 || event.keyCode == 87 || event.keyCode == 38){
+    if (event.keyCode == 119 || event.keyCode == 87 || event.keyCode == 38){
         //'w' or 'W' or 'up arrow'
-        if (selectedMode === "none"){
+        if (selectedMode === "none" || selectedMode === "multibreak-done"){
             selectedMode = "breaking";
             controls.enabled = false;
+            //Unmark all break marked cubes
+            for (i = 0; i < cube_objects.length; i++){
+                if (cube_objects[i].delMarked){
+                    delMark(cube_objects[i],cube_objects[i].cube);
+                }
+            }
         }
     }
-    else if(event.keyCode == 100 || event.keyCode == 68 || event.keyCode == 39){
+    else if (event.keyCode == 100 || event.keyCode == 68 || event.keyCode == 39){
         //'d' or 'D' or 'right arrow'
-        if (selectedMode === "none"){
+        if (selectedMode === "none" || selectedMode === "multibreak-done"){
             selectedMode = "marking"
             controls.enabled = false;
+            //Unmark all break marked cubes
+            for (i = 0; i < cube_objects.length; i++){
+                if (cube_objects[i].delMarked){
+                    delMark(cube_objects[i],cube_objects[i].cube);
+                }
+            }
         }
     }
-    else if(event.keyCode == 97|| event.keyCode == 65 || event.keyCode == 37){
+    else if (event.keyCode == 97 || event.keyCode == 65 || event.keyCode == 37){
         //'a' or 'A' or 'left arrow'
-        if (selectedMode === "none"){
+        if (selectedMode === "none" || selectedMode === "multibreak-done"){
             selectedMode = "creating"
             controls.enabled = false;
+            //Unmark all break marked cubes
+            for (i = 0; i < cube_objects.length; i++){
+                if (cube_objects[i].delMarked){
+                    delMark(cube_objects[i],cube_objects[i].cube);
+                }
+            }
+        }
+    }
+    else if (event.keyCode == 83 || event.keyCode == 115 || event.keyCode == 40){
+        //'s' or 'S' or 'down arrow'
+        if (selectedMode === "none"){
+            selectedMode = "multibreak";
+            controls.enabled = false;
+            return;
+        }
+        else if (selectedMode === "multibreak-done"){
+            //Delete all break marked cubes
+            selectedMode = "multibreak-delete";
+            for (i = 0; i < cube_objects.length; i++){
+                if (cube_objects[i].delMarked){
+                    destroy(cube_objects[i],cube_objects[i].cube);
+                    i--;
+                }
+            }
+            return;
         }
     }
 }
 
 function onKeyUp(event){
-    //Kep up event
+    //Key up event
     //Releasing the key that matches the current mode disables it
     //Releasing anything else does not change current mode
 
@@ -380,14 +440,22 @@ function onKeyUp(event){
         selectedMode = "none";
         controls.enabled = true;
     }
-    if ((event.keyCode == 100 || event.keyCode == 68 || event.keyCode == 39) && selectedMode == "marking"){
+    else if ((event.keyCode == 100 || event.keyCode == 68 || event.keyCode == 39) && selectedMode == "marking"){
         //'d' or 'D' or 'right arrow'
         selectedMode = "none";
         controls.enabled = true;
     }
-    if ((event.keyCode == 97|| event.keyCode == 65 || event.keyCode == 37) && selectedMode == "creating"){
+    else if ((event.keyCode == 97|| event.keyCode == 65 || event.keyCode == 37) && selectedMode == "creating"){
         //'a' or 'A' or 'left arrow'
         selectedMode = "none";
         controls.enabled = true;
     }
+    else if ((event.keyCode == 83|| event.keyCode == 115 || event.keyCode == 40) && selectedMode == "multibreak"){
+        //'s' or 'S' or 'down arrow'
+        selectedMode = "multibreak-done";
+    }
+	else if (selectedMode == "multibreak-delete"){
+		selectedMode = "none";
+		controls.enabled = true;
+	}
 }
