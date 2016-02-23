@@ -13,13 +13,18 @@ var lastPress = null; //Stores last cube that was clicked on
 var marking = null; //Stores whether the first cube was marked or unmarked
 var selectedAxis = null; //Stores which axis is being moved when moving axis
 
-var dimensions = []; //Stores grid dimensions
 var cube_objects = []; //Stores instances of all cube objects in scene
 var cubes = []; //Stores cubes in scene for raycasting
 var cubeDictionary = {}; //Associates cube mesh id with instance of Cube class
 var axis_objects = []; //Stores instances of all axismover objects in scene
 var axis = []; //Stores axismover meshes for raycasting
 var axisDictionary = {}; //Associates axismover mesh id with instace of AxisMover class
+var num_textures = []; //Array for storing number textures for cube's side as a hint
+
+var dimensions = []; //Stores grid dimensions
+var hints_x = []; //Array for storing hints for x axis, in yz coordinates
+var hints_y = []; //Array for storing hints for y axis, in xz coordinates
+var hints_z = []; //Array for storing hints for z axis, in xy coordinates
 
 var planeX = null; //Stores plane that allows movement in X axis
 var planeY = null; //Stores plane that allows movement in Y axis
@@ -33,29 +38,51 @@ var selectedMode = "none"; //Stores the current control mode - breaking, marking
 
 function createCube(x, y, z){
     //Creates a cube centered at [x,y,z]
-    
-    //Set texture
-    var hint_texture = new THREEx.DynamicTexture(128,128);
-    hint_texture.context.font = "bolder 72px Verdana";
-    hint_texture.texture.anisotropy = renderer.getMaxAnisotropy();
-    hint_texture.clear('white').drawText("9", undefined, 85, 'black');
-    
-    hint_texture.texture.needsUpdate = true;
-    
     var cube_geometry = new THREE.BoxGeometry(1, 1, 1);
-    var cube_material = new THREE.MeshBasicMaterial({map: hint_texture.texture, color: 0x9ADBF3});
+	
+	hint_x = hints_x[y][z]; //Read x axis hint
+	hint_y = hints_y[x][z]; //Read y axis hint
+	hint_z = hints_z[x][y]; //Read z axis hint
+    
+	//Set one material for each face, with according number texture
+    var materials = [
+        new THREE.MeshBasicMaterial({
+            map: num_textures[hint_x].texture,
+            color: 0x9ADBF3
+        }),
+        new THREE.MeshBasicMaterial({
+            map: num_textures[hint_x].texture,
+            color: 0x9ADBF3
+        }),
+        new THREE.MeshBasicMaterial({
+            map: num_textures[hint_y].texture,
+            color: 0x9ADBF3
+        }),
+        new THREE.MeshBasicMaterial({
+            map: num_textures[hint_y].texture,
+            color: 0x9ADBF3
+        }),
+        new THREE.MeshBasicMaterial({
+            map: num_textures[hint_z].texture,
+            color: 0x9ADBF3
+        }),
+        new THREE.MeshBasicMaterial({
+            map: num_textures[hint_z].texture,
+            color: 0x9ADBF3
+        }),
+    ];
     
     var obj = new Cube();
 
     //Actual cube object
-    var cube = new THREE.Mesh(cube_geometry, cube_material);
+    var cube = new THREE.Mesh(cube_geometry, new THREE.MeshFaceMaterial(materials));
     cube.position.set(x,y,z);
     cubes.push(cube);
     
     //Cube wireframe
     cube_geometry = new THREE.BoxGeometry(1.005, 1.005, 1.005);
     cube_material = new THREE.MeshBasicMaterial();
-    var mesh = new THREE.Mesh(cube_geometry, cube_material);
+    var mesh = new THREE.Mesh(cube_geometry, new THREE.MeshFaceMaterial(materials));
     mesh.visible = false;
     mesh.position.set(x,y,z);
     var wireframe = new THREE.BoxHelper(mesh);
@@ -221,17 +248,62 @@ function destroy(obj,cube){
 function mark(obj, cube){
     //This function [un]marks a cube, depending on its current state
     obj.marked = !(obj.marked);
-    if (obj.marked) cube.material.color.setHex(0xF28B1E);
-    else cube.material.color.setHex(0x9ADBF3);
+    for (i = 0; i < 6; i++){
+        if (obj.marked) cube.material.materials[i].color.setHex(0xF28B1E);
+        else cube.material.materials[i].color.setHex(0x9ADBF3);
+    }
 }
 
 function delMark(obj,cube){
     //This function [un]markes a cube for deletion, depending on its current state
     if(!obj.marked){
         obj.delMarked = !(obj.delMarked);
-        if (obj.delMarked) cube.material.color.setHex(0x999999);
-        else cube.material.color.setHex(0x9ADBF3);
+        for (i = 0; i < 6; i++){
+            if (obj.delMarked) cube.material.materials[i].color.setHex(0x999999);
+            else cube.material.materials[i].color.setHex(0x9ADBF3);
+        }
     }
+}
+
+function genTexture(num){
+    //Set texture
+    var hint_texture = new THREEx.DynamicTexture(128,128);
+    hint_texture.context.font = "bolder 72px Verdana";
+    hint_texture.texture.anisotropy = renderer.getMaxAnisotropy();
+    if (num == 6 || num == 9) hint_texture.clear('white').drawText(num.toString()+".", undefined, 85, 'black');
+    else hint_texture.clear('white').drawText(num.toString(), undefined, 85, 'black');
+    hint_texture.texture.needsUpdate = true;
+    
+    num_textures.push(hint_texture);
+}
+
+function readInfo(){
+	//Read dimensions
+	dimensions = [10,10,10];
+	
+	//Read x axis clues
+	for (i = 0; i < dimensions[1]; i++){
+		hints_x.push([]);
+		for (j = 0; j < dimensions[2]; j++){
+			hints_x[i].push(j);
+		}
+	}
+	
+	//Read y axis clues
+	for (i = 0; i < dimensions[0]; i++){
+		hints_y.push([]);
+		for (j = 0; j < dimensions[2]; j++){
+			hints_y[i].push(j);
+		}
+	}
+	
+	//Read z axis clues
+	for (i = 0; i < dimensions[0]; i++){
+		hints_z.push([]);
+		for (j = 0; j < dimensions[1]; j++){
+			hints_z[i].push(j);
+		}
+	}
 }
 
 //----- Main class that stores objects information
@@ -427,14 +499,21 @@ function init(){
     renderer.domElement.addEventListener('mouseup', onMouseUp, false);
     window.addEventListener('keydown', onKeyDown, false);
     window.addEventListener('keyup', onKeyUp, false);
+	
+	//Read input file
+	readInfo();
+    
+    //Generate number textures
+	var max_dim = Math.max(...dimensions);
+    for (i=0; i < max_dim+1; i++){
+        genTexture(i);
+    }
     
     //Draw 3x3x3 grid and centralize
-    dimensions = [7,7,7];
-    for (i=0; i<7; i++){
-        for (j=0; j<7; j++){
-            for (k=0; k<7; k++){
-                if (i || j || k) createCube(i,j,k);
-                else createCube(i, j, k);
+    for (i=0; i<dimensions[0]; i++){
+        for (j=0; j<dimensions[1]; j++){
+            for (k=0; k<dimensions[2]; k++){
+				createCube(i, j, k);
             }
         }
     }
@@ -592,9 +671,11 @@ function onMouseMove(event) {
     
     //Highlight nearest cube of ray casting
     for (i = 0; i < cube_objects.length; i++){
-        if (cube_objects[i].marked) cube_objects[i].cube.material.color.setHex(0xF28B1E); //Reset to orange if marked
-        else if (cube_objects[i].delMarked) cube_objects[i].cube.material.color.setHex(0x999999); //Reset to gray if delmarked
-        else cube_objects[i].cube.material.color.setHex(0x9ADBF3); //Reset to cyan else
+        for (j = 0; j < 6; j++){
+            if (cube_objects[i].marked) cube_objects[i].cube.material.materials[j].color.setHex(0xF28B1E); //Reset to orange if marked
+            else if (cube_objects[i].delMarked) cube_objects[i].cube.material.materials[j].color.setHex(0x999999); //Reset to gray if delmarked
+            else cube_objects[i].cube.material.materials[j].color.setHex(0x9ADBF3); //Reset to cyan else
+        }
     }
     
     for (i = 0; i < axis_objects.length; i++){
@@ -607,13 +688,17 @@ function onMouseMove(event) {
         //Only the first intersection matters
         try{
 			//Intersects a cube
-            if (cubeDictionary[intersections[0].object.id].marked){
-                intersections[0].object.material.color.setHex(0xBA4900); //Dark orange
-            }
-            else if (cubeDictionary[intersections[0].object.id].delMarked){
-                intersections[0].object.material.color.setHex(0x666666); //Dark gray
-            }
-            else intersections[0].object.material.color.setHex(0x779EAC); //Dark cyan
+			for (i = 0; i < 6; i++){
+                if (cubeDictionary[intersections[0].object.id].marked){
+                    intersections[0].object.material.materials[i].color.setHex(0xBA4900); //Dark orange
+                }
+                else if (cubeDictionary[intersections[0].object.id].delMarked){
+                    intersections[0].object.material.materials[i].color.setHex(0x666666); //Dark gray
+                }
+                else{
+                    intersections[0].object.material.materials[i].color.setHex(0x779EAC); //Dark cyan
+                }
+			}
         }
         catch(e){
 			//Intersects an axis mover - set its wireframe to white
