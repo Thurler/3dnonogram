@@ -360,8 +360,8 @@ function readInfo(){
         var index = 2;
         var line = null;
         for (index; text[index][0] != '#'; index++){
-            console.log("solution");
             line = text[index];
+            console.log(line);
             line = line.split(',');
             solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = true;
         }
