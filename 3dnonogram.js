@@ -21,6 +21,7 @@ var axis = []; //Stores axismover meshes for raycasting
 var axisDictionary = {}; //Associates axismover mesh id with instace of AxisMover class
 var num_textures = []; //Array for storing number textures for cube's side as a hint
 
+var solution = []; //Stores solution matrix
 var dimensions = []; //Stores grid dimensions
 var hints_x = []; //Array for storing hints for x axis, in yz coordinates
 var hints_y = []; //Array for storing hints for y axis, in xz coordinates
@@ -47,30 +48,39 @@ function createCube(x, y, z){
 	//Set one material for each face, with according number texture
     var materials = [
         new THREE.MeshBasicMaterial({
-            map: num_textures[hint_x].texture,
             color: 0x9ADBF3
         }),
         new THREE.MeshBasicMaterial({
-            map: num_textures[hint_x].texture,
             color: 0x9ADBF3
         }),
         new THREE.MeshBasicMaterial({
-            map: num_textures[hint_y].texture,
             color: 0x9ADBF3
         }),
         new THREE.MeshBasicMaterial({
-            map: num_textures[hint_y].texture,
             color: 0x9ADBF3
         }),
         new THREE.MeshBasicMaterial({
-            map: num_textures[hint_z].texture,
             color: 0x9ADBF3
         }),
         new THREE.MeshBasicMaterial({
-            map: num_textures[hint_z].texture,
             color: 0x9ADBF3
         }),
     ];
+    
+    if (hint_x !== null){
+        materials[0].map = num_textures[hint_x].texture;
+        materials[1].map = num_textures[hint_x].texture;
+    }
+    
+    if (hint_y !== null){
+        materials[2].map = num_textures[hint_y].texture;
+        materials[3].map = num_textures[hint_y].texture;
+    }
+    
+    if (hint_z !== null){
+        materials[4].map = num_textures[hint_z].texture;
+        materials[5].map = num_textures[hint_z].texture;
+    }
     
     var obj = new Cube();
 
@@ -125,20 +135,24 @@ function createAxisMover(axis_n){
     var lowerWire = new THREE.Mesh(geometry, wire_material);
     
     //Position meshes according to axis
+    var t = 0;
     if (axis_n == "x"){
         //Translate to location
-        upperMesh.translateX(-4);
-        upperWire.translateX(-4);
-        lowerMesh.translateX(-4);
-        lowerWire.translateX(-4);
-        upperMesh.translateY(4);
-        upperWire.translateY(4);
-        lowerMesh.translateY(4);
-        lowerWire.translateY(4);
-        upperMesh.translateZ(-4);
-        upperWire.translateZ(-4);
-        lowerMesh.translateZ(-4);
-        lowerWire.translateZ(-4);
+        t = (dimensions[0]/2) + 0.5;
+        upperMesh.translateX(-t);
+        upperWire.translateX(-t);
+        lowerMesh.translateX(-t);
+        lowerWire.translateX(-t);
+        t = (dimensions[1]/2) + 0.5;
+        upperMesh.translateY(t);
+        upperWire.translateY(t);
+        lowerMesh.translateY(t);
+        lowerWire.translateY(t);
+        t = (dimensions[2]/2) + 0.5;
+        upperMesh.translateZ(-t);
+        upperWire.translateZ(-t);
+        lowerMesh.translateZ(-t);
+        lowerWire.translateZ(-t);
         
         //Rotate entire object for axis alignment
         upperMesh.rotation.z = Math.PI/2;
@@ -155,18 +169,21 @@ function createAxisMover(axis_n){
     
     else if (axis_n == "y"){
         //Translate to location
-        upperMesh.translateY(4);
-        upperWire.translateY(4);
-        lowerMesh.translateY(4);
-        lowerWire.translateY(4);
-        upperMesh.translateX(4);
-        upperWire.translateX(4);
-        lowerMesh.translateX(4);
-        lowerWire.translateX(4);
-        upperMesh.translateZ(-4);
-        upperWire.translateZ(-4);
-        lowerMesh.translateZ(-4);
-        lowerWire.translateZ(-4);
+        t = (dimensions[0]/2) + 0.5;
+        upperMesh.translateX(t);
+        upperWire.translateX(t);
+        lowerMesh.translateX(t);
+        lowerWire.translateX(t);
+        t = (dimensions[1]/2) + 0.5;
+        upperMesh.translateY(t);
+        upperWire.translateY(t);
+        lowerMesh.translateY(t);
+        lowerWire.translateY(t);
+        t = (dimensions[2]/2) + 0.5;
+        upperMesh.translateZ(-t);
+        upperWire.translateZ(-t);
+        lowerMesh.translateZ(-t);
+        lowerWire.translateZ(-t);
         
         //Rotate lower half
         lowerMesh.rotation.x = Math.PI;
@@ -177,18 +194,21 @@ function createAxisMover(axis_n){
     
     else if (axis_n == "z"){
         //Translate to location
-        upperMesh.translateX(4);
-        lowerMesh.translateX(4);
-        upperWire.translateX(4);
-        lowerWire.translateX(4);
-        upperMesh.translateY(4);
-        upperWire.translateY(4);
-        lowerMesh.translateY(4);
-        lowerWire.translateY(4);
-        upperMesh.translateZ(4);
-        upperWire.translateZ(4);
-        lowerMesh.translateZ(4);
-        lowerWire.translateZ(4);
+        t = (dimensions[0]/2) + 0.5;
+        upperMesh.translateX(t);
+        lowerMesh.translateX(t);
+        upperWire.translateX(t);
+        lowerWire.translateX(t);
+        t = (dimensions[1]/2) + 0.5;
+        upperMesh.translateY(t);
+        upperWire.translateY(t);
+        lowerMesh.translateY(t);
+        lowerWire.translateY(t);
+        t = (dimensions[2]/2) + 0.5;
+        upperMesh.translateZ(t);
+        upperWire.translateZ(t);
+        lowerMesh.translateZ(t);
+        lowerWire.translateZ(t);
         
         //Rotate entire object for axis alignment
         upperMesh.rotation.x = Math.PI/2;
@@ -232,7 +252,7 @@ function centralizeGrid(dim){
     //present in each coordinate axis
     offset = [];
     for (i=0; i<dimensions.length; i++){
-        offset.push(-dimensions[i]/2);
+        offset.push((-dimensions[i]/2)+0.5);
     }
     for (i=0; i<cube_objects.length; i++) cube_objects[i].moveCube(offset);
 }
@@ -278,32 +298,104 @@ function genTexture(num){
 }
 
 function readInfo(){
-	//Read dimensions
-	dimensions = [10,10,10];
-	
-	//Read x axis clues
-	for (i = 0; i < dimensions[1]; i++){
-		hints_x.push([]);
-		for (j = 0; j < dimensions[2]; j++){
-			hints_x[i].push(j);
-		}
-	}
-	
-	//Read y axis clues
-	for (i = 0; i < dimensions[0]; i++){
-		hints_y.push([]);
-		for (j = 0; j < dimensions[2]; j++){
-			hints_y[i].push(j);
-		}
-	}
-	
-	//Read z axis clues
-	for (i = 0; i < dimensions[0]; i++){
-		hints_z.push([]);
-		for (j = 0; j < dimensions[1]; j++){
-			hints_z[i].push(j);
-		}
-	}
+    //3x3x3 example:
+    
+    //3,3,3
+    //#dimension
+    //1,0,1
+    //0,1,1
+    //1,1,0
+    //1,1,1
+    //1,1,2
+    //2,1,1
+    //1,2,1
+    //#solution
+    //0,0,0
+    //0,2,0
+    //2,0,0
+    //2,2,0
+    //#hint x
+    //1,0,1
+    //1,1,3
+    //1,2,1
+    //#hint y
+    //0,0,0
+    //0,2,0
+    //2,0,0
+    //2,2,0
+    //#hint z
+    
+    var xhr = new XMLHttpRequest();
+    
+    xhr.onload = function(){
+        //Split file between \n
+        var text = this.responseText;
+        text = text.split('\n');
+        
+        //Read dimensions
+        var dim = text[0];
+        dim = dim.split(',');
+        for (i = 0; i < dim.length; i++){
+            dimensions.push(parseInt(dim[i]));
+        }
+        
+        //Initialize solution matrice and hint matrices
+        for (i = 0; i < dimensions[0]; i++){
+            solution.push([]);
+            hints_y.push([]);
+            hints_z.push([]);
+            for (j = 0; j < dimensions[1]; j++){
+                solution[i].push([]);
+                hints_x.push([]);
+                hints_z[i].push(null);
+                for (k = 0; k < dimensions[2]; k++){
+                    solution[i][j].push(false);
+                    hints_x[j].push(null);
+                    hints_y[i].push(null);
+                }
+            }
+        }
+        
+        //Read solution and apply changes to matrix
+        var index = 2;
+        var line = null;
+        for (index; text[index][0] != '#'; index++){
+            console.log("solution");
+            line = text[index];
+            line = line.split(',');
+            solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = true;
+        }
+        
+        //Read hints for x axis
+        index++;
+        for (index; text[index][0] != '#'; index++){
+            console.log("x");
+            line = text[index];
+            line = line.split(',');
+            hints_x[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
+        }
+        
+        //Read hints for y axis
+        index++;
+        for (index; text[index][0] != '#'; index++){
+            console.log("y");
+            line = text[index];
+            line = line.split(',');
+            hints_y[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
+        }
+        
+        //Read hints for z axis
+        index++;
+        for (index; text[index][0] != '#'; index++){
+            console.log("z");
+            line = text[index];
+            line = line.split(',');
+            hints_z[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
+        }
+    };
+    
+    xhr.open('GET', 'levels/sample.txt');
+    xhr.send();
 }
 
 //----- Main class that stores objects information
@@ -416,25 +508,29 @@ AxisMover.prototype.move = function(axis_n,pos){
 
 AxisMover.prototype.reset = function(){
     //This function resets the object's position back to its original value
+    var t = 0;
     if (this.axis == "x"){
-        this.upperMesh.position.setX(-4);
-        this.upperWire.position.setX(-4);
-        this.lowerMesh.position.setX(-3.7);
-        this.lowerWire.position.setX(-3.7);
+        t = (dimensions[0]/2)+0.5
+        this.upperMesh.position.setX(-t);
+        this.upperWire.position.setX(-t);
+        this.lowerMesh.position.setX(-t+0.3);
+        this.lowerWire.position.setX(-t+0.3);
     }
     
     else if (this.axis == "y"){
-        this.upperMesh.position.setY(4);
-        this.upperWire.position.setY(4);
-        this.lowerMesh.position.setY(3.7);
-        this.lowerWire.position.setY(3.7);
+        t = (dimensions[1]/2)+0.5
+        this.upperMesh.position.setY(t);
+        this.upperWire.position.setY(t);
+        this.lowerMesh.position.setY(t-0.3);
+        this.lowerWire.position.setY(t-0.3);
     }
     
     else if (this.axis == "z"){
-        this.upperMesh.position.setZ(4);
-        this.upperWire.position.setZ(4);
-        this.lowerMesh.position.setZ(3.7);
-        this.lowerWire.position.setZ(3.7);
+        t = (dimensions[2]/2)+0.5
+        this.upperMesh.position.setZ(t);
+        this.upperWire.position.setZ(t);
+        this.lowerMesh.position.setZ(t-0.3);
+        this.lowerWire.position.setZ(t-0.3);
     }
 }
 
@@ -472,22 +568,27 @@ function init(){
     controls.dynamicDampingFactor = 0.2;
     controls.keys = [70, 71, 72]; 
     
+    //Read input file
+	readInfo();
+    
     //Create the translation planes wherever
-    var geometry = new THREE.PlaneBufferGeometry(8, 10000);
     var material = new THREE.MeshBasicMaterial({visible:false, side: THREE.DoubleSide});
 	
+	var geometry = new THREE.PlaneBufferGeometry(dimensions[0]+1, 10000);
     planeX = new THREE.Mesh(geometry, material);
-    planeX.translateZ(-4.5);
+    planeX.translateZ(-(dimensions[2]/2)-0.5);
     scene.add(planeX);
 	
+	geometry = new THREE.PlaneBufferGeometry(dimensions[1]+1, 10000);
     planeY = new THREE.Mesh(geometry, material);
     planeY.rotation.z = Math.PI/2;
     planeY.rotation.y = Math.PI/2;
-    planeY.translateZ(4);
+    planeY.translateZ((dimensions[0]/2)+0.5);
     scene.add(planeY);
 	
+	geometry = new THREE.PlaneBufferGeometry(dimensions[2]+1, 10000);
     planeZ = new THREE.Mesh(geometry, material);
-    planeZ.translateY(4);
+    planeZ.translateY((dimensions[1]/2)+0.5);
     planeZ.rotation.x = Math.PI/2;
     planeZ.rotation.z = Math.PI/2;
     scene.add(planeZ);
@@ -499,9 +600,6 @@ function init(){
     renderer.domElement.addEventListener('mouseup', onMouseUp, false);
     window.addEventListener('keydown', onKeyDown, false);
     window.addEventListener('keyup', onKeyUp, false);
-	
-	//Read input file
-	readInfo();
     
     //Generate number textures
 	var max_dim = Math.max(...dimensions);
@@ -567,46 +665,52 @@ function onMouseMove(event) {
             if (selectedAxis.axis == "x"){
 				//Get intersection with plane and move object there
                 intersections = raycaster.intersectObjects([planeX]);
-                var pos = intersections[0].point.x;
-                if (intersections.length > 0) selectedAxis.move("x",pos);
-				//Obtain grid coordinate of said position
-                pos += dimensions[0]/2;
-                pos = Math.floor(pos);
-                pos += 0.15;
-                for (i = 0; i < cube_objects.length; i++){
-					//Make cubes visible/invisible based on grid position
-                    if (cube_objects[i].coord.x < pos) cube_objects[i].makeInvisible();
-                    else cube_objects[i].makeVisible();
+                if (intersections.length > 0){
+                    var pos = intersections[0].point.x;
+                    selectedAxis.move("x",pos);
+    				//Obtain grid coordinate of said position
+                    pos += dimensions[0]/2;
+                    pos = Math.floor(pos);
+                    pos += 0.15;
+                    for (i = 0; i < cube_objects.length; i++){
+    					//Make cubes visible/invisible based on grid position
+                        if (cube_objects[i].coord.x < pos) cube_objects[i].makeInvisible();
+                        else cube_objects[i].makeVisible();
+                    }
                 }
             }
             else if (selectedAxis.axis == "y"){
 			//Get intersection with plane and move object there
                 intersections = raycaster.intersectObjects([planeY]);
-                var pos = intersections[0].point.y;
-                if (intersections.length > 0) selectedAxis.move("y",pos);
-				//Obtain grid coordinate of said position
-                pos += dimensions[1]/2;
-                pos = Math.floor(pos);
-                pos += 0.15;
-                for (i = 0; i < cube_objects.length; i++){
-					//Make cubes visible/invisible based on grid position
-                    if (cube_objects[i].coord.y > pos) cube_objects[i].makeInvisible();
-                    else cube_objects[i].makeVisible();
+                if (intersections.length > 0){
+                    var pos = intersections[0].point.y;
+                    selectedAxis.move("y",pos);
+    				//Obtain grid coordinate of said position
+                    pos += dimensions[1]/2;
+                    pos = Math.floor(pos);
+                    pos += 0.15;
+                    for (i = 0; i < cube_objects.length; i++){
+    					//Make cubes visible/invisible based on grid position
+                        if (cube_objects[i].coord.y > pos) cube_objects[i].makeInvisible();
+                        else cube_objects[i].makeVisible();
+                    }
                 }
             }
             else if (selectedAxis.axis == "z"){
 			//Get intersection with plane and move object there
                 intersections = raycaster.intersectObjects([planeZ]);
-                var pos = intersections[0].point.z;
-                if (intersections.length > 0) selectedAxis.move("z",pos);
-				//Obtain grid coordinate of said position
-                pos += dimensions[2]/2;
-                pos = Math.floor(pos);
-                pos += 0.15;
-                for (i = 0; i < cube_objects.length; i++){
-					//Make cubes visible/invisible based on grid position
-                    if (cube_objects[i].coord.z > pos) cube_objects[i].makeInvisible();
-                    else cube_objects[i].makeVisible();
+                if (intersections.length > 0){
+                    var pos = intersections[0].point.z;
+                    selectedAxis.move("z",pos);
+    				//Obtain grid coordinate of said position
+                    pos += dimensions[2]/2;
+                    pos = Math.floor(pos);
+                    pos += 0.15;
+                    for (i = 0; i < cube_objects.length; i++){
+    					//Make cubes visible/invisible based on grid position
+                        if (cube_objects[i].coord.z > pos) cube_objects[i].makeInvisible();
+                        else cube_objects[i].makeVisible();
+                    }
                 }
             }
         }
