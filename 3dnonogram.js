@@ -339,8 +339,6 @@ function readInfo(){
     		dimensions.push(parseInt(dim[i]));
     	}
     	
-    	console.log(dimensions);
-    	
 		//Initialize solution matrice and hint matrices
     	for (i = 0; i < dimensions[0]; i++){
     		solution.push([]);
@@ -574,6 +572,7 @@ function init(){
     
 function init_cont(){
     //Create the translation planes wherever
+    console.log(dimensions);
     var material = new THREE.MeshBasicMaterial({visible:false, side: THREE.DoubleSide});
 	
 	var geometry = new THREE.PlaneBufferGeometry(dimensions[0]+1, 10000);
