@@ -328,72 +328,72 @@ function readInfo(){
     var xhr = new XMLHttpRequest();
     
     xhr.onload = function(){
-        //Split file between \n
-        var text = this.responseText;
-        text = text.split('\n');
-        
-        //Read dimensions
-        var dim = text[0];
-        dim = dim.split(',');
-        for (i = 0; i < dim.length; i++){
-            dimensions.push(parseInt(dim[i]));
-        }
-        
-        //Initialize solution matrice and hint matrices
-        for (i = 0; i < dimensions[0]; i++){
-            solution.push([]);
-            hints_y.push([]);
-            hints_z.push([]);
-            for (j = 0; j < dimensions[1]; j++){
-                solution[i].push([]);
-                hints_x.push([]);
-                hints_z[i].push(null);
-                for (k = 0; k < dimensions[2]; k++){
-                    solution[i][j].push(false);
-                    hints_x[j].push(null);
-                    hints_y[i].push(null);
-                }
-            }
-        }
-        
-        //Read solution and apply changes to matrix
-        var index = 2;
-        var line = null;
-        for (index; text[index][0] != '#'; index++){
-            line = text[index];
-            console.log(line);
-            line = line.split(',');
-            solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = true;
-        }
-        
-        //Read hints for x axis
-        index++;
-        for (index; text[index][0] != '#'; index++){
-            console.log("x");
-            line = text[index];
-            line = line.split(',');
-            hints_x[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
-        }
-        
+    	//Split file between \n
+    	var text = this.responseText;
+    	text = text.split('\n');
+    	
+    	//Read dimensions
+    	var dim = text[0];
+    	dim = dim.split(',');
+    	for (i = 0; i < dim.length; i++){
+    		dimensions.push(parseInt(dim[i]));
+    	}
+    	
+    	console.log(dimensions);
+    	
+		//Initialize solution matrice and hint matrices
+    	for (i = 0; i < dimensions[0]; i++){
+    		solution.push([]);
+    		hints_y.push([]);
+    		hints_z.push([]);
+    		for (j = 0; j < dimensions[1]; j++){
+    			solution[i].push([]);
+    			hints_x.push([]);
+    			hints_z[i].push(null);
+    			for (k = 0; k < dimensions[2]; k++){
+    				solution[i][j].push(false);
+    				hints_x[j].push(null);
+    				hints_y[i].push(null);
+    			}
+    		}
+    	}
+    	
+    	//Read solution and apply changes to matrix
+    	var index = 2;
+    	var line = null;
+    	for (index; text[index][0] != '#'; index++){
+    		line = text[index];
+    		line = line.split(',');
+    		solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = true;
+    	}
+    	
+    	//Read hints for x axis
+    	index++;
+    	for (index; text[index][0] != '#'; index++){
+    		line = text[index];
+    		line = line.split(',');
+    		hints_x[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
+    	}
+    	
         //Read hints for y axis
-        index++;
-        for (index; text[index][0] != '#'; index++){
-            console.log("y");
-            line = text[index];
-            line = line.split(',');
-            hints_y[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
-        }
-        
-        //Read hints for z axis
-        index++;
-        for (index; text[index][0] != '#'; index++){
-            console.log("z");
-            line = text[index];
-            line = line.split(',');
-            hints_z[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
-        }
+    	index++;
+    	for (index; text[index][0] != '#'; index++){
+    		line = text[index];
+    		line = line.split(',');
+    		hints_y[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
+    	}
+    	
+    	//Read hints for z axis
+    	index++;
+    	for (index; text[index][0] != '#'; index++){
+    		line = text[index];
+    		line = line.split(',');
+    		hints_z[parseInt(line[0])][parseInt(line[1])] = parseInt(line[2]);
+    	}
+    	
+    	init_cont();
     };
-    
+
     xhr.open('GET', 'levels/sample.txt');
     xhr.send();
 }
@@ -570,7 +570,9 @@ function init(){
     
     //Read input file
 	readInfo();
+}
     
+function init_cont(){
     //Create the translation planes wherever
     var material = new THREE.MeshBasicMaterial({visible:false, side: THREE.DoubleSide});
 	
