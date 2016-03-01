@@ -6,13 +6,14 @@
 var scene, camera, renderer; //Three.js variables
 var width, height, aspect; //Window variables
 
-var gameMode = "playing"; //Stores current game state
-
-//----- Global Variables for Solving
 var mouse; //Stores whether mouse is pressed
 var mousepos = new THREE.Vector2(); //Stores mouse position in normalized coords
 var raycaster = new THREE.Raycaster(); //Raycaster for picking
 
+var gameMode = "playing"; //Stores current game state
+
+//----- Global Variables for Solving
+var filename = "sample.txt"; //Stores the level's filename
 var pressCoord = new THREE.Vector3(); //Stores clicked cube's coordinate
 var pressAxis = ""; //Stores multiple cube operations' axis
 var lastPress = null; //Stores last cube that was clicked on
@@ -529,6 +530,84 @@ function victory(){
     }
 }
 
+function destroyScene(){
+    var count = 0;
+    for (i = 0; i < cube_objects.length; i){
+        count++;
+        cube_objects[i].deleteCube();
+    }
+    
+    for (i = 0; i < 3; i++){
+        axis_objects[i].remove();
+    }
+    
+    pressCoord = new THREE.Vector3(); //Stores clicked cube's coordinate
+    pressAxis = ""; //Stores multiple cube operations' axis
+    lastPress = null; //Stores last cube that was clicked on
+    marking = null; //Stores whether the first cube was marked or unmarked
+    selectedAxis = null; //Stores which axis is being moved when moving axis
+    selectedMode = "none"; //Stores the current control mode - breaking, marking, etc
+    
+    cube_objects = []; //Stores instances of all cube objects in scene
+    cubes = []; //Stores cubes in scene for raycasting
+    cubeDictionary = {}; //Associates cube mesh id with instance of Cube class
+    axis_objects = []; //Stores instances of all axismover objects in scene
+    axis = []; //Stores axismover meshes for raycasting
+    axisDictionary = {}; //Associates axismover mesh id with instace of AxisMover class
+    num_textures = []; //Array for storing number textures for cube's side as a hint
+    
+    solution = []; //Stores solution matrix
+    dimensions = []; //Stores grid dimensions
+    offset = []; //Stores grid offset
+    hints_x = []; //Array for storing hints for x axis, in yz coordinates
+    hints_y = []; //Array for storing hints for y axis, in xz coordinates
+    hints_z = []; //Array for storing hints for z axis, in xy coordinates
+    
+    errorCounter = 0; //Counts number of errors
+    cubeCounter = 0; //Counts number of cubes on screen
+    solutionCubes = 0; //Stores number of cubes in solution
+    
+    planeX = null; //Stores plane that allows movement in X axis
+    planeY = null; //Stores plane that allows movement in Y axis
+    planeZ = null; //Stores plane that allows movement in Z axis
+    
+    readInfo(filename);
+	gameMode = "playing";
+	controls.enabled = true;
+	swal.close();
+}
+
+function reset(){
+    swal({
+        title: "Are you sure?",
+        showConfirmButton: false,
+        allowEscapeKey: false,
+        allowOutsideClick: false,
+        closeOnCancel: false,
+        closeOnConfirm: false,
+        html: true,
+        text: "<h2>All progress will be lost!</h2><br><br>"+
+              "<div onclick='destroyScene();' class='btn-red'>Yes, restart!</div><br><br>"+
+              "<div onclick='callPauseMenu();' class='btn-gray'>No, go back!</div>"
+    });
+}
+
+function callPauseMenu(){
+    //Pause game
+	gameMode = "pause";
+	controls.enabled = false;
+	swal({  title: "Game Paused",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<div onclick='swal.close();gameMode=\"playing\";controls.enabled=true;' class='btn-blue'>Resume</div><br><br>"+
+				  "<div onclick='reset()' class='btn-green'>Restart</div>"
+    });
+}
+
 //----- Main class that stores objects information
 
 function Cube(){
@@ -710,7 +789,7 @@ function init(){
     
     //Initializes camera
     camera = new THREE.PerspectiveCamera(45, aspect, 1, 10000);
-    camera.position.z = 15;
+	camera.position.z = 10;
     
     controls = new THREE.TrackballControls(camera);
     controls.rotateSpeed = 20;
@@ -718,7 +797,7 @@ function init(){
     controls.noPan = false;
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.2;
-    controls.keys = [70, 71, 72]; 
+    controls.keys = [70, 71, 72];
     
     //Add event listeners
     window.addEventListener('resize', onWindowResize, false);
@@ -729,10 +808,22 @@ function init(){
     window.addEventListener('keyup', onKeyUp, false);
     
     //Read input file
-	if (gameMode == "playing") readInfo("sample.txt");
+	if (gameMode == "playing") readInfo(filename);
 }
     
 function init_solve(){
+    //Initializes camera
+    camera = new THREE.PerspectiveCamera(45, aspect, 1, 10000);
+	camera.position.z = 3*Math.max(...dimensions);
+    
+    controls = new THREE.TrackballControls(camera);
+    controls.rotateSpeed = 20;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.2;
+    controls.keys = [70, 71, 72];
+
     //Create the translation planes wherever
     var material = new THREE.MeshBasicMaterial({visible:false, side: THREE.DoubleSide});
 	
@@ -994,7 +1085,7 @@ function onMouseDown(event) {
     					//Intersects a cube
                         var cube = intersections[0].object;
                         var obj = cubeDictionary[cube.id];
-                        if (selectedMode == "breaking" && solution[obj.coord.x][obj.coord.y][obj.coord.z]){
+                        if (selectedMode == "breaking" && !obj.marked && !obj.errorMark && solution[obj.coord.x][obj.coord.y][obj.coord.z]){
                             //Cube to be deleted belongs in solution - dont delete
                             for (i = 0; i < 6; i++){
                                 cube.material.materials[i].color.setHex(0xD46A6A);
@@ -1069,7 +1160,6 @@ function onMouseUp(event){
         marking = null;
         if (selectedMode == "slicing"){
             selectedMode = "none";
-            selectedAxis = null;
             controls.enabled = true;
         }
     }
@@ -1083,8 +1173,16 @@ function onKeyDown(event){
     //Pressing down S or down arrow enables multi break mode  
     
     event.preventDefault();
+
+	if (gameMode == "pause"){
+		gameMode = "playing";
+		return;
+	}
     
     if (gameMode == "playing"){
+		if (event.keyCode == 27){
+			callPauseMenu();
+		}
         if (event.keyCode == 119 || event.keyCode == 87 || event.keyCode == 38){
             //'w' or 'W' or 'up arrow'
             if (selectedMode === "none" || selectedMode === "multibreak-done"){
