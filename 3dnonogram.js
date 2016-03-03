@@ -10,7 +10,9 @@ var mouse; //Stores whether mouse is pressed
 var mousepos = new THREE.Vector2(); //Stores mouse position in normalized coords
 var raycaster = new THREE.Raycaster(); //Raycaster for picking
 
-var gameMode = "playing"; //Stores current game state
+var gameMode = "main menu"; //Stores current game state
+var fileContent = ""; //Stores uplaoded file content
+var customLevel = false; //Stores whether you are playing a custom level or not
 
 //----- Global Variables for Solving
 var filename = "sample.txt"; //Stores the level's filename
@@ -29,7 +31,7 @@ var axis = []; //Stores axismover meshes for raycasting
 var axisDictionary = {}; //Associates axismover mesh id with instace of AxisMover class
 var num_textures = []; //Array for storing number textures for cube's side as a hint
 
-var solution = []; //Stores solution matrix
+var solution = []; //Stores solution matrixe
 var dimensions = []; //Stores grid dimensions
 var offset = []; //Stores grid offset
 var hints_x = []; //Array for storing hints for x axis, in yz coordinates
@@ -39,7 +41,7 @@ var hints_z = []; //Array for storing hints for z axis, in xy coordinates
 var errorCounter = 0; //Counts number of errors
 var cubeCounter = 0; //Counts number of cubes on screen
 var solutionCubes = 0; //Stores number of cubes in solution
-var maxErrors = 3; //Stores max number of errors
+var maxErrors = 5; //Stores max number of errors
 
 var planeX = null; //Stores plane that allows movement in X axis
 var planeY = null; //Stores plane that allows movement in Y axis
@@ -50,30 +52,44 @@ var planeZ = null; //Stores plane that allows movement in Z axis
 function createCube(x, y, z){
     //Creates a cube centered at [x,y,z]
     var cube_geometry = new THREE.BoxGeometry(1, 1, 1);
+    
+    var hint_x;
+    var hint_y;
+    var hint_z;
 	
-	hint_x = hints_x[y][z]; //Read x axis hint
-	hint_y = hints_y[x][z]; //Read y axis hint
-	hint_z = hints_z[x][y]; //Read z axis hint
+	if (gameMode == "playing"){
+	    hint_x = hints_x[y][z]; //Read x axis hint
+	    hint_y = hints_y[x][z]; //Read y axis hint
+	    hint_z = hints_z[x][y]; //Read z axis hint
+	}
+	else{
+	    hint_x = null;
+	    hint_y = null;
+	    hint_z = null;
+	}
     
 	//Set one material for each face, with according number texture
+	var cubeColor;
+	if (gameMode == "playing") cubeColor = 0x9ADBF3;
+	else cubeColor = solution[x][y][z] - 1;
     var materials = [
         new THREE.MeshBasicMaterial({
-            color: 0x9ADBF3
+            color: cubeColor
         }),
         new THREE.MeshBasicMaterial({
-            color: 0x9ADBF3
+            color: cubeColor
         }),
         new THREE.MeshBasicMaterial({
-            color: 0x9ADBF3
+            color: cubeColor
         }),
         new THREE.MeshBasicMaterial({
-            color: 0x9ADBF3
+            color: cubeColor
         }),
         new THREE.MeshBasicMaterial({
-            color: 0x9ADBF3
+            color: cubeColor
         }),
         new THREE.MeshBasicMaterial({
-            color: 0x9ADBF3
+            color: cubeColor
         }),
     ];
     
@@ -404,114 +420,150 @@ function genTexture(num){
     num_textures.push(hint_texture);
 }
 
-function readInfo(filename){
-    //3x3x3 example:
-    
-    //3,3,3
-    //#dimension
-    //1,0,1
-    //0,1,1
-    //1,1,0
-    //1,1,1
-    //1,1,2
-    //2,1,1
-    //1,2,1
-    //#solution
-    //0,0,0
-    //0,2,0
-    //2,0,0
-    //2,2,0
-    //#hint x
-    //1,0,1
-    //1,1,3
-    //1,2,1
-    //#hint y
-    //0,0,0
-    //0,2,0
-    //2,0,0
-    //2,2,0
-    //#hint z
+function readInfo(filenam){
+    filename = filenam;
+    customLevel = false;
     
     var xhr = new XMLHttpRequest();
     
     xhr.onload = function(){
     	//Split file between \n
-    	var text = this.responseText;
-    	text = text.split('\n');
-    	
-    	//Read dimensions
-    	var dim = text[0];
-    	dim = dim.split(',');
-    	for (i = 0; i < dim.length; i++){
-    		dimensions.push(parseInt(dim[i]));
-    	}
-    	cubeCounter = dimensions[0]*dimensions[1]*dimensions[2];
-    	
-    	//Adjust grid offset
-        for (i=0; i<dimensions.length; i++){
-            offset.push((-dimensions[i]/2)+0.5);
-        }
-    	
-		//Initialize solution matrice and hint matrices
-    	for (i = 0; i < dimensions[0]; i++){
-    		solution.push([]);
-    		hints_y.push([]);
-    		hints_z.push([]);
-    		for (j = 0; j < dimensions[1]; j++){
-    			solution[i].push([]);
-    			hints_x.push([]);
-    			hints_z[i].push(null);
-    			for (k = 0; k < dimensions[2]; k++){
-    				solution[i][j].push(false);
-    				hints_x[j].push(null);
-    				hints_y[i].push(null);
-    			}
-    		}
-    	}
-    	
-    	//Read solution and apply changes to matrix
-    	var index = 2;
-    	var line = null;
-    	for (index; text[index][0] != '#'; index++){
-    		line = text[index];
-    		line = line.split(',');
-    		solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = parseInt(line[3])+1;
-    		solutionCubes++;
-    	}
-    	
-    	//Read hints for x axis
-    	index++;
-    	for (index; text[index][0] != '#'; index++){
-    		line = text[index];
-    		line = line.split(',');
-    		hints_x[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
-    	}
-    	
-        //Read hints for y axis
-    	index++;
-    	for (index; text[index][0] != '#'; index++){
-    		line = text[index];
-    		line = line.split(',');
-    		hints_y[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
-    	}
-    	
-    	//Read hints for z axis
-    	index++;
-    	for (index; text[index][0] != '#'; index++){
-    		line = text[index];
-    		line = line.split(',');
-    		hints_z[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
-    	}
-    	
-    	init_solve();
+    	var content = this.responseText;
+    	loadInfo(content);
     };
 
-    xhr.open('GET', 'levels/'+filename);
+    xhr.open('GET', 'levels/'+filenam);
     xhr.send();
 }
 
+function readSingleFile(e){
+    var file = e.target.files[0];
+    if (!file) {
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        fileContent = e.target.result;
+        customLevel = true;
+    };
+    reader.readAsText(file);
+}
+
+function loadInfo(content){
+	if (content == "") return;
+    var text = content.split('\n');
+    	
+	//Read dimensions
+	var dim = text[0];
+	dim = dim.split(',');
+	for (i = 0; i < dim.length; i++){
+		dimensions.push(parseInt(dim[i]));
+	}
+	cubeCounter = dimensions[0]*dimensions[1]*dimensions[2];
+	
+	//Adjust grid offset
+    for (i=0; i<dimensions.length; i++){
+        offset.push((-dimensions[i]/2)+0.5);
+    }
+	
+	//Initialize solution matrice and hint matrices
+	for (i = 0; i < dimensions[0]; i++){
+		solution.push([]);
+		hints_y.push([]);
+		hints_z.push([]);
+		for (j = 0; j < dimensions[1]; j++){
+			solution[i].push([]);
+			hints_x.push([]);
+			hints_z[i].push(null);
+			for (k = 0; k < dimensions[2]; k++){
+				solution[i][j].push(false);
+				hints_x[j].push(null);
+				hints_y[i].push(null);
+			}
+		}
+	}
+	
+	//Read solution and apply changes to matrix
+	var index = 2;
+	var line = null;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = parseInt(line[3])+1;
+		solutionCubes++;
+	}
+	
+	//Read hints for x axis
+	index++;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		hints_x[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
+	}
+	
+    //Read hints for y axis
+	index++;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		hints_y[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
+	}
+	
+	//Read hints for z axis
+	index++;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		hints_z[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
+	}
+	
+	swal.close();
+	init_solve();
+}
+
+function loadInfoCreate(content){
+    if (content == "") return;
+    var text = content.split('\n');
+    	
+	//Read dimensions
+	var dim = text[0];
+	dim = dim.split(',');
+	for (i = 0; i < dim.length; i++){
+		dimensions.push(parseInt(dim[i]));
+	}
+	cubeCounter = dimensions[0]*dimensions[1]*dimensions[2];
+	
+	//Adjust grid offset
+    for (i=0; i<dimensions.length; i++){
+        offset.push((-dimensions[i]/2)+0.5);
+    }
+    
+    //Initialize solution matrice and hint matrices
+	for (i = 0; i < dimensions[0]; i++){
+		solution.push([]);
+		for (j = 0; j < dimensions[1]; j++){
+			solution[i].push([]);
+			for (k = 0; k < dimensions[2]; k++){
+				solution[i][j].push(false);
+			}
+		}
+	}
+	
+	//Read solution and apply changes to matrix
+	var index = 2;
+	var line = null;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = parseInt(line[3])+1;
+		solutionCubes++;
+	}
+	
+	swal.close();
+	init_create();
+}
+
 function victory(){
-    console.log("VICTORY");
     selectedMode = "victory";
     controls.enabled = true;
     for (i = 0; i < num_textures.length; i++){
@@ -523,11 +575,19 @@ function victory(){
         axis_objects[i].remove();
     }
     for (i = 0; i < cube_objects.length; i++){
+        var obj = cube_objects[i];
+        obj.makeVisible();
         for (j = 0; j < 6; j++){
-            var obj = cube_objects[i];
             obj.cube.material.materials[j].color.setHex(solution[obj.coord.x][obj.coord.y][obj.coord.z]-1);
         }
+        for (j = 0; j < obj.circles.length; j++){
+            obj.circles[j].visible = false;
+        }
+        for (j = 0; j < obj.squares.length; j++){
+            obj.squares[j].visible = false;
+        }
     }
+    callVictory();
 }
 
 function destroyScene(){
@@ -570,14 +630,18 @@ function destroyScene(){
     planeX = null; //Stores plane that allows movement in X axis
     planeY = null; //Stores plane that allows movement in Y axis
     planeZ = null; //Stores plane that allows movement in Z axis
-    
-    readInfo(filename);
+}
+
+function reset(){
+    destroyScene();
+    if (customLevel) loadInfo(fileContent);
+    else readInfo(filename);
 	gameMode = "playing";
 	controls.enabled = true;
 	swal.close();
 }
 
-function reset(){
+function callRestart(){
     swal({
         title: "Are you sure?",
         showConfirmButton: false,
@@ -587,8 +651,8 @@ function reset(){
         closeOnConfirm: false,
         html: true,
         text: "<h2>All progress will be lost!</h2><br><br>"+
-              "<div onclick='destroyScene();' class='btn-red'>Yes, restart!</div><br><br>"+
-              "<div onclick='callPauseMenu();' class='btn-gray'>No, go back!</div>"
+              "<div onclick='reset();' class='btn-red'>Yes, restart!</div><br><br>"+
+              "<div onclick='callPauseMenu();' class='btn-gray'>No, go back!</div><br>"
     });
 }
 
@@ -604,7 +668,113 @@ function callPauseMenu(){
             closeOnConfirm: false,
             html: true,
             text: "<div onclick='swal.close();gameMode=\"playing\";controls.enabled=true;' class='btn-blue'>Resume</div><br><br>"+
-				  "<div onclick='reset()' class='btn-green'>Restart</div>"
+				  "<div onclick='callRestart();' class='btn-green'>Restart</div><br><br>"+
+				  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
+    });
+}
+
+function callMainMenu(){
+    //Main menu for ui
+    swal({  title: "3D Nonogram - Web Version",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<div onclick='callLevelSelect();' class='btn-big-blue'>Play</div><br><br>"+
+				  "<div onclick='callCreateSelect();' class='btn-big-green'>Create</div><br><br>"+
+				  "<div onclick='callHowtoPlay();' class='btn-red'>How to Play</div><br>"
+    });
+}
+
+function callLevelSelect(){
+    fileContent = "";
+    swal({  title: "Choose which level to play!",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<hr><h4>Upload a custom one:</h4>"+
+                  "<input type='file' id='file-input' accept='.lvl' /><br>"+
+                  "<div onclick='loadInfo(fileContent);' class='btn-green'>Upload and play!</div><br>"+
+                  "<hr><h4>Or select one of the levels below:</h4>"+
+                  "<div onclick='readInfo(\"sample.txt\");swal.close();' class='btn-blue'>Simple Level</div><br><br>"+
+                  "<div onclick='readInfo(\"2d.txt\");swal.close();' class='btn-blue'>2D in 3D</div><br><br>"+
+                  "<div onclick='readInfo(\"challenge.txt\");swal.close();' class='btn-blue'>Challenge</div><br><hr><br>"+
+                  "<div onclick='callMainMenu();' class='btn-gray'>Back to Main Menu</div><br>"
+    });
+    document.getElementById('file-input').addEventListener('change', readSingleFile, false);
+}
+
+function callCreateSelect(){
+    fileContent = "";
+    swal({  title: "Choose what you want to make!",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<hr><h4>Upload an existing level:</h4>"+
+                  "<input type='file' id='file-input-2' accept='.lvl' /><br>"+
+                  "<div onclick='loadInfoCreate(fileContent);' class='btn-green'>Upload and make!</div><br>"+
+                  "<hr><h4>Or start your own one:</h4>"+
+                  "<div onclick='newLevel();' class='btn-blue'>Start from Scratch!</div><br><hr><br>"+
+                  "<div onclick='callMainMenu();' class='btn-gray'>Back to Main Menu</div><br>"
+    });
+    document.getElementById('file-input-2').addEventListener('change', readSingleFile, false);
+}
+
+function callHowtoPlay(){
+    swal({  title: "Tutorial Levels",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<div onclick='callTutorial1();' class='btn-blue'>1 - Basics</div><br><br>"+
+				  "<div onclick='callTutorial2();' class='btn-blue'>2 - Numbers</div><br><br>"+
+				  "<div onclick='callTutorial3();' class='btn-blue'>3 - Circles</div><br><br>"+
+				  "<div onclick='callTutorial4();' class='btn-blue'>4 - Techniques</div><br><br>"+
+				  "<div onclick='callTutorial5();' class='btn-blue'>5 - Squares</div><br><br>"+
+				  "<div onclick='callTutorial6();' class='btn-blue'>6 - Large Puzzles</div><br><br>"+
+				  "<div onclick='callMainMenu();' class='btn-gray'>Back to Main Menu</div><br>"
+    });
+}
+
+function callVictory(){
+    gameMode = "pause";
+	controls.enabled = false;
+    swal({  title: "Victory - You Win!",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<h3>You win! Press Resume to look at the puzzle's colored solution, or press Quit to return to the level select screen.</h3>"+
+                  "<div onclick='swal.close();gameMode=\"playing\";controls.enabled=true;' class='btn-blue'>Resume</div><br><br>"+
+				  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
+    });
+}
+
+function callDefeatError(){
+    gameMode = "pause";
+	controls.enabled = false;
+	swal({  title: "Defeat - You Lost...",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<h3>You lost... You made 5 mistakes, that's no good! Make sure you try again!</h3>"+
+				  "<div onclick='reset();' class='btn-green'>Restart</div><br><br>"+
+				  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
     });
 }
 
@@ -807,8 +977,7 @@ function init(){
     window.addEventListener('keydown', onKeyDown, false);
     window.addEventListener('keyup', onKeyUp, false);
     
-    //Read input file
-	if (gameMode == "playing") readInfo(filename);
+    callMainMenu();
 }
     
 function init_solve(){
@@ -852,11 +1021,64 @@ function init_solve(){
         genTexture(i);
     }
     
-    //Draw 3x3x3 grid and centralize
+    gameMode = "playing";
+    
+    //Draw grid
     for (i=0; i<dimensions[0]; i++){
         for (j=0; j<dimensions[1]; j++){
             for (k=0; k<dimensions[2]; k++){
 				createCube(i, j, k);
+            }
+        }
+    }
+    
+    createAxisMover("x");
+    createAxisMover("y");
+    createAxisMover("z");
+}
+
+function init_create(){
+    //Initializes camera
+    camera = new THREE.PerspectiveCamera(45, aspect, 1, 10000);
+	camera.position.z = 3*Math.max(...dimensions);
+    
+    controls = new THREE.TrackballControls(camera);
+    controls.rotateSpeed = 20;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.2;
+    controls.keys = [70, 71, 72];
+
+    //Create the translation planes wherever
+    var material = new THREE.MeshBasicMaterial({visible:false, side: THREE.DoubleSide});
+	
+	var geometry = new THREE.PlaneBufferGeometry(dimensions[0]+1, 10000);
+    planeX = new THREE.Mesh(geometry, material);
+    planeX.translateZ(-(dimensions[2]/2)-0.5);
+    scene.add(planeX);
+	
+	geometry = new THREE.PlaneBufferGeometry(dimensions[1]+1, 10000);
+    planeY = new THREE.Mesh(geometry, material);
+    planeY.rotation.z = Math.PI/2;
+    planeY.rotation.y = Math.PI/2;
+    planeY.translateZ((dimensions[0]/2)+0.5);
+    scene.add(planeY);
+	
+	geometry = new THREE.PlaneBufferGeometry(dimensions[2]+1, 10000);
+    planeZ = new THREE.Mesh(geometry, material);
+    planeZ.translateY((dimensions[1]/2)+0.5);
+    planeZ.rotation.x = Math.PI/2;
+    planeZ.rotation.z = Math.PI/2;
+    scene.add(planeZ);
+    
+    gameMode = "creating";
+    
+    //Draw grid
+    for (i=0; i<dimensions[0]; i++){
+        for (j=0; j<dimensions[1]; j++){
+            for (k=0; k<dimensions[2]; k++){
+				if (solution[i][j][k]) createCube(i, j, k);
             }
         }
     }
@@ -1092,6 +1314,7 @@ function onMouseDown(event) {
                             }
                             obj.errorMark = true;
                             errorCounter++;
+                            if (errorCounter >= maxErrors) callDefeatError();
                             return;
                         }
                         lastPress = obj; //Stores object for multiple cubes operations
@@ -1173,15 +1396,11 @@ function onKeyDown(event){
     //Pressing down S or down arrow enables multi break mode  
     
     event.preventDefault();
-
-	if (gameMode == "pause"){
-		gameMode = "playing";
-		return;
-	}
     
     if (gameMode == "playing"){
 		if (event.keyCode == 27){
-			callPauseMenu();
+		    if (selectedMode == "victory") callVictory();
+			else callPauseMenu();
 		}
         if (event.keyCode == 119 || event.keyCode == 87 || event.keyCode == 38){
             //'w' or 'W' or 'up arrow'
@@ -1241,6 +1460,7 @@ function onKeyDown(event){
                         obj.errorMark = true;
                         errorCounter++;
                         obj.delMarked = false;
+                        if (errorCounter >= maxErrors) callDefeatError();
                     }
                     else if (obj.delMarked){
                         destroy(cube_objects[i],cube_objects[i].cube);
