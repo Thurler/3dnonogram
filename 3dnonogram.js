@@ -58,22 +58,22 @@ function createCube(x, y, z){
     var hint_x;
     var hint_y;
     var hint_z;
+	
+	if (gameMode == "playing"){
+	    hint_x = hints_x[y][z]; //Read x axis hint
+	    hint_y = hints_y[x][z]; //Read y axis hint
+	    hint_z = hints_z[x][y]; //Read z axis hint
+	}
+	else{
+	    hint_x = null;
+	    hint_y = null;
+	    hint_z = null;
+	}
     
-    if (gameMode == "playing"){
-        hint_x = hints_x[y][z]; //Read x axis hint
-        hint_y = hints_y[x][z]; //Read y axis hint
-        hint_z = hints_z[x][y]; //Read z axis hint
-    }
-    else{
-        hint_x = null;
-        hint_y = null;
-        hint_z = null;
-    }
-    
-    //Set one material for each face, with according number texture
-    var cubeColor;
-    if (gameMode == "playing") cubeColor = 0x9ADBF3;
-    else cubeColor = solution[x][y][z] - 1;
+	//Set one material for each face, with according number texture
+	var cubeColor;
+	if (gameMode == "playing") cubeColor = 0x9ADBF3;
+	else cubeColor = solution[x][y][z] - 1;
     var materials = [
         new THREE.MeshBasicMaterial({
             color: cubeColor
@@ -437,9 +437,9 @@ function readInfo(filenam){
     var xhr = new XMLHttpRequest();
     
     xhr.onload = function(){
-        //Split file between \n
-        var content = this.responseText;
-        loadInfo(content);
+    	//Split file between \n
+    	var content = this.responseText;
+    	loadInfo(content);
     };
 
     xhr.open('GET', 'levels/'+filenam);
@@ -460,117 +460,117 @@ function readSingleFile(e){
 }
 
 function loadInfo(content){
-    if (content == "") return;
+	if (content == "") return;
     var text = content.split('\n');
-        
-    //Read dimensions
-    var dim = text[0];
-    dim = dim.split(',');
-    for (i = 0; i < dim.length; i++){
-        dimensions.push(parseInt(dim[i]));
-    }
-    cubeCounter = dimensions[0]*dimensions[1]*dimensions[2];
-    
-    //Adjust grid offset
+    	
+	//Read dimensions
+	var dim = text[0];
+	dim = dim.split(',');
+	for (i = 0; i < dim.length; i++){
+		dimensions.push(parseInt(dim[i]));
+	}
+	cubeCounter = dimensions[0]*dimensions[1]*dimensions[2];
+	
+	//Adjust grid offset
     for (i=0; i<dimensions.length; i++){
         offset.push((-dimensions[i]/2)+0.5);
     }
-    
-    //Initialize solution matrice and hint matrices
-    for (i = 0; i < dimensions[0]; i++){
-        solution.push([]);
-        hints_y.push([]);
-        hints_z.push([]);
-        for (j = 0; j < dimensions[1]; j++){
-            solution[i].push([]);
-            hints_x.push([]);
-            hints_z[i].push(null);
-            for (k = 0; k < dimensions[2]; k++){
-                solution[i][j].push(false);
-                hints_x[j].push(null);
-                hints_y[i].push(null);
-            }
-        }
-    }
-    
-    //Read solution and apply changes to matrix
-    var index = 2;
-    var line = null;
-    for (index; text[index][0] != '#'; index++){
-        line = text[index];
-        line = line.split(',');
-        solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = parseInt(line[3])+1;
-        solutionCubes++;
-    }
-    
-    //Read hints for x axis
-    index++;
-    for (index; text[index][0] != '#'; index++){
-        line = text[index];
-        line = line.split(',');
-        hints_x[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
-    }
-    
+	
+	//Initialize solution matrice and hint matrices
+	for (i = 0; i < dimensions[0]; i++){
+		solution.push([]);
+		hints_y.push([]);
+		hints_z.push([]);
+		for (j = 0; j < dimensions[1]; j++){
+			solution[i].push([]);
+			hints_x.push([]);
+			hints_z[i].push(null);
+			for (k = 0; k < dimensions[2]; k++){
+				solution[i][j].push(false);
+				hints_x[j].push(null);
+				hints_y[i].push(null);
+			}
+		}
+	}
+	
+	//Read solution and apply changes to matrix
+	var index = 2;
+	var line = null;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = parseInt(line[3])+1;
+		solutionCubes++;
+	}
+	
+	//Read hints for x axis
+	index++;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		hints_x[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
+	}
+	
     //Read hints for y axis
-    index++;
-    for (index; text[index][0] != '#'; index++){
-        line = text[index];
-        line = line.split(',');
-        hints_y[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
-    }
-    
-    //Read hints for z axis
-    index++;
-    for (index; text[index][0] != '#'; index++){
-        line = text[index];
-        line = line.split(',');
-        hints_z[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
-    }
-    
-    swal.close();
-    init_solve();
+	index++;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		hints_y[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
+	}
+	
+	//Read hints for z axis
+	index++;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		hints_z[parseInt(line[0])][parseInt(line[1])] = {value: parseInt(line[2]), type: parseInt(line[3])};
+	}
+	
+	swal.close();
+	init_solve();
 }
 
 function loadInfoCreate(content){
     if (content == "") return;
     var text = content.split('\n');
-        
-    //Read dimensions
-    var dim = text[0];
-    dim = dim.split(',');
-    for (i = 0; i < dim.length; i++){
-        dimensions.push(parseInt(dim[i]));
-    }
-    cubeCounter = dimensions[0]*dimensions[1]*dimensions[2];
-    
-    //Adjust grid offset
+    	
+	//Read dimensions
+	var dim = text[0];
+	dim = dim.split(',');
+	for (i = 0; i < dim.length; i++){
+		dimensions.push(parseInt(dim[i]));
+	}
+	cubeCounter = dimensions[0]*dimensions[1]*dimensions[2];
+	
+	//Adjust grid offset
     for (i=0; i<dimensions.length; i++){
         offset.push((-dimensions[i]/2)+0.5);
     }
     
     //Initialize solution matrice and hint matrices
-    for (i = 0; i < dimensions[0]; i++){
-        solution.push([]);
-        for (j = 0; j < dimensions[1]; j++){
-            solution[i].push([]);
-            for (k = 0; k < dimensions[2]; k++){
-                solution[i][j].push(false);
-            }
-        }
-    }
-    
-    //Read solution and apply changes to matrix
-    var index = 2;
-    var line = null;
-    for (index; text[index][0] != '#'; index++){
-        line = text[index];
-        line = line.split(',');
-        solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = parseInt(line[3])+1;
-        solutionCubes++;
-    }
-    
-    swal.close();
-    init_create();
+	for (i = 0; i < dimensions[0]; i++){
+		solution.push([]);
+		for (j = 0; j < dimensions[1]; j++){
+			solution[i].push([]);
+			for (k = 0; k < dimensions[2]; k++){
+				solution[i][j].push(false);
+			}
+		}
+	}
+	
+	//Read solution and apply changes to matrix
+	var index = 2;
+	var line = null;
+	for (index; text[index][0] != '#'; index++){
+		line = text[index];
+		line = line.split(',');
+		solution[parseInt(line[0])][parseInt(line[1])][parseInt(line[2])] = parseInt(line[3])+1;
+		solutionCubes++;
+	}
+	
+	swal.close();
+	init_create();
 }
 
 function victory(){
@@ -615,9 +615,11 @@ function victory(){
 
 function destroyScene(){
     var count = 0;
-    for (i = 0; i < cube_objects.length; i){
+    var loop = cube_objects.length;
+    for (p = 0; p < loop; p++){
         count++;
-        cube_objects[i].deleteCube();
+        //console.log(cube_objects);
+        cube_objects[0].deleteCube();
     }
     
     if (tutorial === -1 || tutorial === 5){
@@ -665,9 +667,9 @@ function reset(){
     tutorial = tut;
     if (customLevel) loadInfo(fileContent);
     else readInfo(filename);
-    gameMode = "playing";
-    controls.enabled = true;
-    swal.close();
+	gameMode = "playing";
+	controls.enabled = true;
+	swal.close();
 }
 
 function callRestart(){
@@ -687,9 +689,9 @@ function callRestart(){
 
 function callPauseMenu(){
     //Pause game
-    gameMode = "pause";
-    controls.enabled = false;
-    swal({  title: "Game Paused",
+	gameMode = "pause";
+	controls.enabled = false;
+	swal({  title: "Game Paused",
             showConfirmButton: false,
             allowEscapeKey: false,
             allowOutsideClick: false,
@@ -697,16 +699,16 @@ function callPauseMenu(){
             closeOnConfirm: false,
             html: true,
             text: "<div onclick='swal.close();gameMode=\"playing\";controls.enabled=true;' class='btn-blue'>Resume</div><br><br>"+
-                  "<div onclick='callRestart();' class='btn-green'>Restart</div><br><br>"+
-                  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
+				  "<div onclick='callRestart();' class='btn-green'>Restart</div><br><br>"+
+				  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
     });
 }
 
 function callTutorialPauseMenu(){
     //Pause game
-    gameMode = "pause";
-    controls.enabled = false;
-    swal({  title: "Game Paused",
+	gameMode = "pause";
+	controls.enabled = false;
+	swal({  title: "Game Paused",
             showConfirmButton: false,
             allowEscapeKey: false,
             allowOutsideClick: false,
@@ -714,8 +716,8 @@ function callTutorialPauseMenu(){
             closeOnConfirm: false,
             html: true,
             text: "<div onclick='swal.close();gameMode=\"playing\";controls.enabled=true;' class='btn-blue'>Resume</div><br><br>"+
-                  "<div onclick='callRestart();' class='btn-green'>Restart</div><br><br>"+
-                  "<div onclick='destroyScene();callHowtoPlay();' class='btn-red'>Quit</div><br>"
+				  "<div onclick='callRestart();' class='btn-green'>Restart</div><br><br>"+
+				  "<div onclick='destroyScene();callHowtoPlay();' class='btn-red'>Quit</div><br>"
     });
 }
 
@@ -729,8 +731,8 @@ function callMainMenu(){
             closeOnConfirm: false,
             html: true,
             text: "<div onclick='callLevelSelect();' class='btn-big-blue'>Play</div><br><br>"+
-                  "<div onclick='callCreateSelect();' class='btn-big-green'>Create</div><br><br>"+
-                  "<div onclick='callHowtoPlay();' class='btn-red'>How to Play</div><br>"
+				  "<div onclick='callCreateSelect();' class='btn-big-green'>Create</div><br><br>"+
+				  "<div onclick='callHowtoPlay();' class='btn-red'>How to Play</div><br>"
     });
 }
 
@@ -857,12 +859,12 @@ function callHowtoPlay(){
             closeOnConfirm: false,
             html: true,
             text: "<div onclick='callTutorial1();' class='btn-blue'>1 - Basics</div><br><br>"+
-                  "<div onclick='callTutorial2();' class='btn-blue'>2 - Basic Techniques</div><br><br>"+
-                  "<div onclick='callTutorial3();' class='btn-blue'>3 - Circles</div><br><br>"+
-                  "<div onclick='callTutorial4();' class='btn-blue'>4 - Other Techniques</div><br><br>"+
-                  "<div onclick='callTutorial5();' class='btn-blue'>5 - Squares</div><br><br>"+
-                  "<div onclick='callTutorial6();' class='btn-blue'>6 - Large Puzzles</div><br><br>"+
-                  "<div onclick='callMainMenu();' class='btn-gray'>Back to Main Menu</div><br>"
+				  "<div onclick='callTutorial2();' class='btn-blue'>2 - Basic Techniques</div><br><br>"+
+				  "<div onclick='callTutorial3();' class='btn-blue'>3 - Circles</div><br><br>"+
+				  "<div onclick='callTutorial4();' class='btn-blue'>4 - Other Techniques</div><br><br>"+
+				  "<div onclick='callTutorial5();' class='btn-blue'>5 - Squares</div><br><br>"+
+				  "<div onclick='callTutorial6();' class='btn-blue'>6 - Large Puzzles</div><br><br>"+
+				  "<div onclick='callMainMenu();' class='btn-gray'>Back to Main Menu</div><br>"
     });
 }
 
@@ -904,7 +906,7 @@ function callT1_2(){
             html: true,
             text: "<h4>The number on the cubes show you how many consecutive cubes there should be in any given row or column.</h4>"+
                   "<h4>You can tell which row/column by seeing which side the number is at - if it's on top of a cube, it refers to the vertical column of cubes below, like so:</h4>"+
-                  ""+
+                  "<img src='img/t1-0.png'>"+
                   "<div onclick='callT1_3();' class='btn-red'>Next</div><br>"
     });
 }
@@ -918,7 +920,7 @@ function callT1_3(){
             closeOnConfirm: false,
             html: true,
             text: "<h4>In order to properly see these numbers, you'll want to move the camera around a lot, so you can see the grid from many different angles. You can use your mouse to move it, like so:</h4>"+
-                  ""+
+                  "<img src='img/t1-2.png'>"+
                   "<div onclick='callT1_4();' class='btn-red'>Next</div><br>"
     });
 }
@@ -938,6 +940,7 @@ function callT1_4(){
 
 function callT1_5(){
     destroyScene();
+    gameMode = "main menu";
     swal({  title: "Tutorial - Basics",
             showConfirmButton: false,
             allowEscapeKey: false,
@@ -947,7 +950,7 @@ function callT1_5(){
             html: true,
             text: "<h4>Now then, let's go over the basics.</h4>"+
                   "<h4>Say you have the situation below, where a row of 3 blocks has a hint number of 1. At first, you can't figure out which cube is the right one, since any one of them could be the answer.</h4>"+
-                  ""+
+                  "<img src='img/t1-3.png'>"+
                   "<div onclick='callT1_6();' class='btn-red'>Next</div><br>"
     });
 }
@@ -962,13 +965,14 @@ function callT1_6(){
             html: true,
             text: "<h4>However, if you're given a hint number of 0, that means all of the cubes in that row can be broken!</h4>"+
                   "<h4>In this game, you can break cubes by clicking on them while enabling break mode - you can do so by holding down either the W key or the UP arrow key on your keyboard.</h4>"+
-                  ""+
+                  "<img src='img/t1-4.png'>"+
                   "<h4>Give it a try, delete the cubes that have a hint number of 0 on them!</h4>"+
                   "<div onclick='tutorial=0.33;readInfo(\"tutorial0a.txt\");' class='btn-red'>Next</div><br>"
     });
 }
 
 function callT1_7(){
+    gameMode = "main menu";
     swal({  title: "Tutorial - Basics",
             showConfirmButton: false,
             allowEscapeKey: false,
@@ -979,7 +983,7 @@ function callT1_7(){
             text: "<h4>Well done! Now then, let's take a look at another situation.</h4>"+
                   "<h4>Let's say you have a row of 4 blocks, and the clue for that row is the number 4. That means all of the cubes are part of the hidden object's shape, right?</h4>"+
                   "<h4>Then we should be careful about not deleting them accidentally.</h4>"+
-                  ""+
+                  "<img src='img/t1-5.png'>"+
                   "<h4>Give it a try, delete the cubes that have a hint number of 0 on them!</h4>"+
                   "<div onclick='callT1_8();' class='btn-red'>Next</div><br>"
     });
@@ -995,13 +999,14 @@ function callT1_8(){
             html: true,
             text: "<h4>In order to not break them accidentally, we can mark them as a cube we want to keep, confirming it as part of the solution.</h4>"+
                   "<h4>You can mark a cube by clicking it while holding down the D key or the RIGHT arrow key on your keyboard. You can also unmark cubes you've previously marked.</h4>"+
-                  ""+
+                  "<img src='img/t1-6.png'>"+
                   "<h4>Give it a try, mark all the cubes that belong to the row with the hints given, and delete the rest!</h4>"+
                   "<div onclick='tutorial=0.67;readInfo(\"tutorial0b.txt\");' class='btn-red'>Next</div><br>"
     });
 }
 
 function callT1_9(){
+    gameMode = "main menu";
     swal({  title: "Tutorial - Basics",
             showConfirmButton: false,
             allowEscapeKey: false,
@@ -1025,6 +1030,7 @@ function callT1_10(){
             html: true,
             text: "<h4>In order to delete multiple cubes, hold down the S key or the DOWN arrow key, and then proceed to mark all the cubes you would like to delete - without letting go of the key!</h4>"+
                   "<h4>Once you're satisfied with what you have, let go of the key and press it again, and all the marked cubes will be deleted!</h4>"+
+                  "<img src='img/t1-7.png'>"+
                   "<div onclick='callT1_11();' class='btn-red'>Next</div><br>"
     });
 }
@@ -1038,8 +1044,7 @@ function callT1_11(){
             closeOnConfirm: false,
             html: true,
             text: "<h4>And that's all you need to know to get started. Visit the other tutorials to get some more in-depth information, and good luck out there!</h4>"+
-                  "<h4>Oh, and when you're solving an actual puzzle, you will be given a time limit to solve it - try and do it under that!</h4>"+
-                  "<h4>You also can't make too many mistakes, otherwise you will lose as well. Have fun!</h4>"+
+                  "<h4>Also, you can't make too many mistakes, otherwise you will lose as well. Have fun!</h4>"+
                   ""+
                   "<div onclick='callHowtoPlay();' class='btn-red'>Next</div><br>"
     });
@@ -1070,9 +1075,9 @@ function callT2_1(){
             closeOnConfirm: false,
             html: true,
             text: "<h4>Now then, let's assume you have the following situation: a row of 5 cubes, with a hint number of 4. Let's also assume you ahve already marked the leftmost cube, like so:</h4>"+
-                  ""+
+                  "<img src='img/t2-0.png'>"+
                   "<h4>Now, because the cubes need to be consecutive, we can easily deduce the first 4 cubes are the ones that are part of the solution, with the last one being the extra cube.</h4>"+
-                  ""+
+                  "<img src='img/t2-1.png'>"+
                   "<div onclick='callT2_2();' class='btn-red'>Next</div><br>"
     });
 }
@@ -1086,9 +1091,9 @@ function callT2_2(){
             closeOnConfirm: false,
             html: true,
             text: "<h4>Another basic thing to keep in mind is the following scenario: a row of 5 cubes, with a hint number of 4, and no cubes already marked. Let's take a look at the possible scenarios here...</h4>"+
-                  ""+
+                  "<img src='img/t2-2.png'>"+
                   "<h4>Notice how the center cubes are always a part of the solution, no matter which scenario? That means you can safely mark them as part of the solution and continue solving the puzzle with that new information!</h4>"+
-                  ""+
+                  "<img src='img/t2-3.png'>"+
                   "<div onclick='callT2_3();' class='btn-red'>Next</div><br>"
     });
 }
@@ -1116,7 +1121,7 @@ function callTutorial3(){
             html: true,
             text: "<h4>Let's talk about circles now! Sometimes, a hint number will be circled, to indicate that the cubes in that row are NOT entirely consecutive.</h4>"+
                   "<h4>Instead, they are two groups of consecutive cubes, which are not necessarily evenly devided, meaning a circled 4 could mean two groups of 2 cubes, or a group of 3 cubes and another of 1 cube.</h4>"+
-                  ""+
+                  "<img src='img/t3-0.png'>"+
                   "<div onclick='callT3_1();' class='btn-red'>Next</div><br>"
     });
 }
@@ -1130,7 +1135,7 @@ function callT3_1(){
             closeOnConfirm: false,
             html: true,
             text: "<h4>So let's have an imaginary scenario to ease your understanding: 5 cubes in a row, with a hint number of circled 4, and no previous markings. The possible scenarios are:</h4>"+
-                  ""+
+                  "<img src='img/t3-1.png'>"+
                   "<h4>And so, in every scenario we notice the cubes on the edge are marked, so we can safely assume they are part of the solution. Keep this in mind!</h4>"+
                   "<div onclick='callT3_2();' class='btn-red'>Next</div><br>"
     });
@@ -1174,7 +1179,7 @@ function callT4_1(){
             html: true,
             text: "<h4>For example, if you have 5 blocks, one group of 4, and another of 1, in a row which clue is a circled 4, it should be obvious the cube in the lonesome group is part of the solution.</h4>"+
                   "<h4>This is because otherwise we'd have 4 consecutive cubes - going against what a circled hint of 4 means. We can then deduce which other cubes are part of the solution by fitting the remainder 3 cubes from the hint in the 4 cube group, as such:</h4>"+
-                  ""+
+                  "<img src='img/t4-0.png'>"+
                   "<div onclick='callT4_2();' class='btn-red'>Next</div><br>"
     });
 }
@@ -1203,7 +1208,7 @@ function callTutorial5(){
             text: "<h4>Okay, as if circles weren't enough, we've got squares as well.</h4>"+
                   "<h4>Squares are pretty much a more generic circle - they tell you that the cubes in that row are separated in three OR MORE groups. And you have no way to know how many, at least at first.</h4>"+
                   "<h4>For example, a hint number of a square 4 could mean there are 2 groups of 1 cube and 1 group of 2 cubes, OR 4 groups of single cubes.</h4>"+
-                  ""+
+                  "<img src='img/t5-0.png'>"+
                   "<div onclick='callT5_1();' class='btn-red'>Next</div><br>"
     });
 }
@@ -1246,7 +1251,7 @@ function callT6_1(){
             html: true,
             text: "<h4>Axis sliders are diamond-like objects around the grid - and you can (surprise!) slide them along their axis to make some cubes invisible, letting you take a look at the inner part of the grid.</h4>"+
                   "<h4>There is one for each axis (x, y, z), and with them, you can reach anywhere inside the grid, from any angle.</h4>"+
-                  ""+
+                  "<img src='img/t6-0.png'>"+
                   "<div onclick='callT6_2();' class='btn-red'>Next</div><br>"
     });
 }
@@ -1266,7 +1271,7 @@ function callT6_2(){
 
 function callVictory(){
     gameMode = "pause";
-    controls.enabled = false;
+	controls.enabled = false;
     swal({  title: "Victory - You Win!",
             showConfirmButton: false,
             allowEscapeKey: false,
@@ -1276,13 +1281,13 @@ function callVictory(){
             html: true,
             text: "<h3>You win! Press Resume to look at the puzzle's colored solution, or press Quit to return to the level select screen.</h3>"+
                   "<div onclick='swal.close();gameMode=\"playing\";controls.enabled=true;' class='btn-blue'>Resume</div><br><br>"+
-                  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
+				  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
     });
 }
 
 function callTutorialVictory(){
     gameMode = "pause";
-    controls.enabled = false;
+	controls.enabled = false;
     swal({  title: "Victory - You Win!",
             showConfirmButton: false,
             allowEscapeKey: false,
@@ -1292,14 +1297,14 @@ function callTutorialVictory(){
             html: true,
             text: "<h3>You win! Press Resume to look at the puzzle's colored solution, or press Quit to return to the tutorial screen.</h3>"+
                   "<div onclick='swal.close();gameMode=\"playing\";controls.enabled=true;' class='btn-blue'>Resume</div><br><br>"+
-                  "<div onclick='destroyScene();callHowtoPlay();' class='btn-red'>Quit</div><br>"
+				  "<div onclick='destroyScene();callHowtoPlay();' class='btn-red'>Quit</div><br>"
     });
 }
 
 function callDefeatError(){
     gameMode = "pause";
-    controls.enabled = false;
-    swal({  title: "Defeat - You Lost...",
+	controls.enabled = false;
+	swal({  title: "Defeat - You Lost...",
             showConfirmButton: false,
             allowEscapeKey: false,
             allowOutsideClick: false,
@@ -1307,15 +1312,15 @@ function callDefeatError(){
             closeOnConfirm: false,
             html: true,
             text: "<h3>You lost... You made 5 mistakes, that's no good! Make sure you try again!</h3>"+
-                  "<div onclick='reset();' class='btn-green'>Restart</div><br><br>"+
-                  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
+				  "<div onclick='reset();' class='btn-green'>Restart</div><br><br>"+
+				  "<div onclick='destroyScene();callLevelSelect();' class='btn-red'>Quit</div><br>"
     });
 }
 
 function callTutorialDefeatError(){
     gameMode = "pause";
-    controls.enabled = false;
-    swal({  title: "Defeat - You Lost...",
+	controls.enabled = false;
+	swal({  title: "Defeat - You Lost...",
             showConfirmButton: false,
             allowEscapeKey: false,
             allowOutsideClick: false,
@@ -1323,8 +1328,24 @@ function callTutorialDefeatError(){
             closeOnConfirm: false,
             html: true,
             text: "<h3>You lost... You made 5 mistakes, that's no good! Make sure you try again!</h3>"+
-                  "<div onclick='reset();' class='btn-green'>Restart</div><br><br>"+
-                  "<div onclick='destroyScene();callHowtoPlay();' class='btn-red'>Quit</div><br>"
+				  "<div onclick='reset();' class='btn-green'>Restart</div><br><br>"+
+				  "<div onclick='destroyScene();callHowtoPlay();' class='btn-red'>Quit</div><br>"
+    });
+}
+
+function callError(){
+    gameMode = "pause";
+	controls.enabled = false;
+	swal({  title: "You made a mistake!",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<h3>You made a mistake! Watch out, you can't break a cube that's part of the solution!</h3>"+
+                  "<h4>You already made "+errorCounter.toString()+" mistakes! "+(5-errorCounter).toString()+" more will knock you out!</h4>"+
+				  "<div onclick='swal.close();gameMode=\"playing\";controls.enabled=true;' class='btn-red'>OK</div><br>"
     });
 }
 
@@ -1353,6 +1374,22 @@ function changeColor(){
     markColor = parseInt(color, 16);
     
     swal.close();
+}
+
+function callCreatePauseMenu(){
+    gameMode = "pause";
+    controls.enabled = false;
+    swal({  title: "Game Paused",
+            showConfirmButton: false,
+            allowEscapeKey: false,
+            allowOutsideClick: false,
+            closeOnCancel: false,
+            closeOnConfirm: false,
+            html: true,
+            text: "<div onclick='swal.close();gameMode=\"creating\";controls.enabled=true;' class='btn-blue'>Resume</div><br><br>"+
+				  "<div onclick='' class='btn-green'>Save and Download</div><br><br>"+
+				  "<div onclick='destroyScene();callCreateSelect();' class='btn-red'>Quit</div><br>"
+    });
 }
 
 //----- Main class that stores objects information
@@ -1536,7 +1573,7 @@ function init(){
     
     //Initializes camera
     camera = new THREE.PerspectiveCamera(45, aspect, 1, 10000);
-    camera.position.z = 10;
+	camera.position.z = 10;
     
     controls = new THREE.TrackballControls(camera);
     controls.rotateSpeed = 20;
@@ -1560,7 +1597,7 @@ function init(){
 function init_solve(){
     //Initializes camera
     camera = new THREE.PerspectiveCamera(45, aspect, 1, 10000);
-    camera.position.z = 3*Math.max(...dimensions);
+	camera.position.z = 3*Math.max(...dimensions);
     
     controls = new THREE.TrackballControls(camera);
     controls.rotateSpeed = 20;
@@ -1572,20 +1609,20 @@ function init_solve(){
 
     //Create the translation planes wherever
     var material = new THREE.MeshBasicMaterial({visible:false, side: THREE.DoubleSide});
-    
-    var geometry = new THREE.PlaneBufferGeometry(dimensions[0]+1, 10000);
+	
+	var geometry = new THREE.PlaneBufferGeometry(dimensions[0]+1, 10000);
     planeX = new THREE.Mesh(geometry, material);
     planeX.translateZ(-(dimensions[2]/2)-0.5);
     scene.add(planeX);
-    
-    geometry = new THREE.PlaneBufferGeometry(dimensions[1]+1, 10000);
+	
+	geometry = new THREE.PlaneBufferGeometry(dimensions[1]+1, 10000);
     planeY = new THREE.Mesh(geometry, material);
     planeY.rotation.z = Math.PI/2;
     planeY.rotation.y = Math.PI/2;
     planeY.translateZ((dimensions[0]/2)+0.5);
     scene.add(planeY);
-    
-    geometry = new THREE.PlaneBufferGeometry(dimensions[2]+1, 10000);
+	
+	geometry = new THREE.PlaneBufferGeometry(dimensions[2]+1, 10000);
     planeZ = new THREE.Mesh(geometry, material);
     planeZ.translateY((dimensions[1]/2)+0.5);
     planeZ.rotation.x = Math.PI/2;
@@ -1593,7 +1630,7 @@ function init_solve(){
     scene.add(planeZ);
     
     //Generate number textures
-    var max_dim = Math.max(...dimensions);
+	var max_dim = Math.max(...dimensions);
     for (i=0; i < max_dim+1; i++){
         genTexture(i);
     }
@@ -1604,7 +1641,7 @@ function init_solve(){
     for (i=0; i<dimensions[0]; i++){
         for (j=0; j<dimensions[1]; j++){
             for (k=0; k<dimensions[2]; k++){
-                createCube(i, j, k);
+				createCube(i, j, k);
             }
         }
     }
@@ -1625,7 +1662,7 @@ function init_solve(){
 function init_create(){
     //Initializes camera
     camera = new THREE.PerspectiveCamera(45, aspect, 1, 10000);
-    camera.position.z = 3*Math.max(...dimensions);
+	camera.position.z = 3*Math.max(...dimensions);
     
     controls = new THREE.TrackballControls(camera);
     controls.rotateSpeed = 20;
@@ -1637,20 +1674,20 @@ function init_create(){
 
     //Create the translation planes wherever
     var material = new THREE.MeshBasicMaterial({visible:false, side: THREE.DoubleSide});
-    
-    var geometry = new THREE.PlaneBufferGeometry(dimensions[0]+1, 10000);
+	
+	var geometry = new THREE.PlaneBufferGeometry(dimensions[0]+1, 10000);
     planeX = new THREE.Mesh(geometry, material);
     planeX.translateZ(-(dimensions[2]/2)-0.5);
     scene.add(planeX);
-    
-    geometry = new THREE.PlaneBufferGeometry(dimensions[1]+1, 10000);
+	
+	geometry = new THREE.PlaneBufferGeometry(dimensions[1]+1, 10000);
     planeY = new THREE.Mesh(geometry, material);
     planeY.rotation.z = Math.PI/2;
     planeY.rotation.y = Math.PI/2;
     planeY.translateZ((dimensions[0]/2)+0.5);
     scene.add(planeY);
-    
-    geometry = new THREE.PlaneBufferGeometry(dimensions[2]+1, 10000);
+	
+	geometry = new THREE.PlaneBufferGeometry(dimensions[2]+1, 10000);
     planeZ = new THREE.Mesh(geometry, material);
     planeZ.translateY((dimensions[1]/2)+0.5);
     planeZ.rotation.x = Math.PI/2;
@@ -1663,7 +1700,7 @@ function init_create(){
     for (i=0; i<dimensions[0]; i++){
         for (j=0; j<dimensions[1]; j++){
             for (k=0; k<dimensions[2]; k++){
-                if (solution[i][j][k]) createCube(i, j, k);
+				if (solution[i][j][k]) createCube(i, j, k);
             }
         }
     }
@@ -1717,54 +1754,54 @@ function onMouseMove(event) {
         if (mouse && gameMode !== "tutorialA" && gameMode !== "tutorialB"){
             //Handles mouse hold event - enters if mouse button is pressed
             if (selectedMode == "slicing"){
-                //If slicing the grid, we need to update the slicer's position
+    			//If slicing the grid, we need to update the slicer's position
                 var intersections;
                 if (selectedAxis.axis == "x"){
-                    //Get intersection with plane and move object there
+    				//Get intersection with plane and move object there
                     intersections = raycaster.intersectObjects([planeX]);
                     if (intersections.length > 0){
                         var pos = intersections[0].point.x;
                         selectedAxis.move("x",pos);
-                        //Obtain grid coordinate of said position
+        				//Obtain grid coordinate of said position
                         pos += dimensions[0]/2;
                         pos = Math.floor(pos);
                         pos += 0.15;
                         for (i = 0; i < cube_objects.length; i++){
-                            //Make cubes visible/invisible based on grid position
+        					//Make cubes visible/invisible based on grid position
                             if (cube_objects[i].coord.x < pos) cube_objects[i].makeInvisible();
                             else cube_objects[i].makeVisible();
                         }
                     }
                 }
                 else if (selectedAxis.axis == "y"){
-                //Get intersection with plane and move object there
+    			//Get intersection with plane and move object there
                     intersections = raycaster.intersectObjects([planeY]);
                     if (intersections.length > 0){
                         var pos = intersections[0].point.y;
                         selectedAxis.move("y",pos);
-                        //Obtain grid coordinate of said position
+        				//Obtain grid coordinate of said position
                         pos += dimensions[1]/2;
                         pos = Math.floor(pos);
                         pos += 0.15;
                         for (i = 0; i < cube_objects.length; i++){
-                            //Make cubes visible/invisible based on grid position
+        					//Make cubes visible/invisible based on grid position
                             if (cube_objects[i].coord.y > pos) cube_objects[i].makeInvisible();
                             else cube_objects[i].makeVisible();
                         }
                     }
                 }
                 else if (selectedAxis.axis == "z"){
-                //Get intersection with plane and move object there
+    			//Get intersection with plane and move object there
                     intersections = raycaster.intersectObjects([planeZ]);
                     if (intersections.length > 0){
                         var pos = intersections[0].point.z;
                         selectedAxis.move("z",pos);
-                        //Obtain grid coordinate of said position
+        				//Obtain grid coordinate of said position
                         pos += dimensions[2]/2;
                         pos = Math.floor(pos);
                         pos += 0.15;
                         for (i = 0; i < cube_objects.length; i++){
-                            //Make cubes visible/invisible based on grid position
+        					//Make cubes visible/invisible based on grid position
                             if (cube_objects[i].coord.z > pos) cube_objects[i].makeInvisible();
                             else cube_objects[i].makeVisible();
                         }
@@ -1843,7 +1880,7 @@ function onMouseMove(event) {
         }
         
         for (i = 0; i < axis_objects.length; i++){
-            //Set wireframes back to black
+    		//Set wireframes back to black
             axis_objects[i].upperWire.material.color.setHex(0x000000);
             axis_objects[i].lowerWire.material.color.setHex(0x000000);
         }
@@ -1851,25 +1888,25 @@ function onMouseMove(event) {
         if (intersections.length > 0){
             //Only the first intersection matters
             try{
-                //Intersects a cube
-                var cubeColor = intersections[0].object.material.materials[i].color;
-                
-                var rColor = Math.floor(cubeColor.r*255);
-                var gColor = Math.floor(cubeColor.g*255);
-                var bColor = Math.floor(cubeColor.b*255);
-                
-                rColor = Math.floor(rColor*0.75);
-                gColor = Math.floor(gColor*0.75);
-                bColor = Math.floor(bColor*0.75);
-                
-                var color = (rColor*256*256) + (gColor*256) + bColor;
-                
-                for (i = 0; i < 6; i++){
+    			//Intersects a cube
+    			var cubeColor = intersections[0].object.material.materials[i].color;
+    			
+    			var rColor = Math.floor(cubeColor.r*255);
+    			var gColor = Math.floor(cubeColor.g*255);
+    			var bColor = Math.floor(cubeColor.b*255);
+    			
+    			rColor = Math.floor(rColor*0.75);
+    			gColor = Math.floor(gColor*0.75);
+    			bColor = Math.floor(bColor*0.75);
+    			
+    			var color = (rColor*256*256) + (gColor*256) + bColor;
+    			
+    			for (i = 0; i < 6; i++){
                     intersections[0].object.material.materials[i].color.setHex(color); //Darker shade of previous color
-                }
+    			}
             }
             catch(e){
-                //Intersects an axis mover - set its wireframe to white
+    			//Intersects an axis mover - set its wireframe to white
                 var obj = axisDictionary[intersections[0].object.id];
                 obj.upperWire.material.color.setHex(0xFFFFFF);
                 obj.lowerWire.material.color.setHex(0xFFFFFF);
@@ -1884,7 +1921,7 @@ function onMouseDown(event) {
     event.preventDefault();
     
     if (gameMode == "playing" || gameMode == "creating" || gameMode == "tutorialA" || gameMode == "tutorialB"){
-    
+	
         if (selectedMode == "slicing") return; //Prevent event when holding down mouse when slicing
         mouse = true;
         raycaster.setFromCamera(mousepos, camera);
@@ -1894,7 +1931,7 @@ function onMouseDown(event) {
             case 0: //left click
                 if (intersections.length > 0){
                     try{
-                        //Intersects a cube
+    					//Intersects a cube
                         var cube = intersections[0].object;
                         var obj = cubeDictionary[cube.id];
                         if ((gameMode == "playing" || gameMode == "tutorialA" || gameMode == "tutorialB") && selectedMode == "breaking" && !obj.marked && !obj.errorMark && solution[obj.coord.x][obj.coord.y][obj.coord.z]){
@@ -1906,14 +1943,15 @@ function onMouseDown(event) {
                             errorCounter++;
                             if (tutorial === -1 && errorCounter >= maxErrors) callDefeatError();
                             else if (errorCounter >= maxErrors) callTutorialDefeatError();
+                            else callError();
                             return;
                         }
                         lastPress = obj; //Stores object for multiple cubes operations
-                        //Store cube grid coordinates
+    					//Store cube grid coordinates
                         pressCoord.x = obj.coord.x;
                         pressCoord.y = obj.coord.y;
                         pressCoord.z = obj.coord.z;
-                        //Do action  based on mode
+    					//Do action  based on mode
                         if (selectedMode == "breaking"){
                             destroy(obj,cube);
                             if ((gameMode == "playing" || gameMode == "tutorialA" || gameMode == "tutorialB") && cubeCounter === solutionCubes && errorCounter < maxErrors) victory();
@@ -1928,29 +1966,29 @@ function onMouseDown(event) {
                         }
                     }
                     catch (e){
-                        //Intersects an axis mover
+    					//Intersects an axis mover
                         var axismover = intersections[0].object;
                         var obj = axisDictionary[axismover.id];
-                        //Move back all other axis mover objects to prevent multi slicing
+    					//Move back all other axis mover objects to prevent multi slicing
                         for (i = 0; i < axis_objects.length; i++){
                             if (obj === axis_objects[i]) continue;
                             axis_objects[i].reset();
                         }
                         controls.enabled = false;
                         selectedMode = "slicing";
-                        //Make all cubes visible if changing axis
+    					//Make all cubes visible if changing axis
                         if (selectedAxis !== obj){
                             for (i = 0; i < cube_objects.length; i++){
                                 cube_objects[i].makeVisible();
                             }
                         }
                         selectedAxis = obj;
-                        //Unmark all break marked cubes
-                        for (i = 0; i < cube_objects.length; i++){
-                            if (cube_objects[i].delMarked){
-                                delMark(cube_objects[i],cube_objects[i].cube);
-                            }
-                        }
+    					//Unmark all break marked cubes
+    					for (i = 0; i < cube_objects.length; i++){
+    						if (cube_objects[i].delMarked){
+    							delMark(cube_objects[i],cube_objects[i].cube);
+    						}
+    					}
                     }
                 }
                 break;
@@ -2050,6 +2088,7 @@ function onKeyDown(event){
                             obj.delMarked = false;
                             if (tutorial === -1 && errorCounter >= maxErrors) callDefeatError();
                             else if (errorCounter >= maxErrors) callTutorialDefeatError();
+                            else callError();
                         }
                         else if (obj.delMarked){
                             destroy(cube_objects[i],cube_objects[i].cube);
@@ -2073,14 +2112,14 @@ function onKeyUp(event){
     event.preventDefault();
     
     if (gameMode == "playing" || gameMode == "creating" || gameMode == "tutorialA" || gameMode =="tutorialB"){
-        if (event.keyCode == 27){
-            if (selectedMode == "tutorial") callT1_5();
-            else if (selectedMode == "victory" && tutorial === -1) callVictory();
-            else if (selectedMode == "victory") callTutorialVictory();
-            else if (gameMode == "creating") callCreatePauseMenu();
-            else if (tutorial === -1) callPauseMenu();
-            else callTutorialPauseMenu();
-        }
+		if (event.keyCode == 27){
+		    if (selectedMode == "tutorial") callT1_5();
+		    else if (selectedMode == "victory" && tutorial === -1) callVictory();
+		    else if (selectedMode == "victory") callTutorialVictory();
+		    else if (gameMode == "creating") callCreatePauseMenu();
+		    else if (tutorial === -1) callPauseMenu();
+			else callTutorialPauseMenu();
+		}
         if ((event.keyCode == 119 || event.keyCode == 87 || event.keyCode == 38) && selectedMode == "breaking"){
             //'w' or 'W' or 'up arrow'
             selectedMode = "none";
