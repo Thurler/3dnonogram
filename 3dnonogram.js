@@ -379,7 +379,7 @@ function destroy(obj,cube){
     //This function destroys a cube and the object associated with it
     if (obj.errorMark) return;
     
-    if(gameMode != "playing" || gameMode != "tutorial" || !obj.marked){
+    if(gameMode == "creating" || !obj.marked){
         delete cubeDictionary[cube.id];
         obj.deleteCube();
         cubeCounter--;
